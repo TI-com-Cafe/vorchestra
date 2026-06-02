@@ -1,0 +1,73 @@
+{
+  "name": "vorchestra",
+  "private": true,
+  "version": "0.1.0",
+  "description": "VOrchestra - the local-first orchestrator for Python virtual environments",
+  "homepage": "https://vorchestra.dev",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/marquesantero/vorchestra.git"
+  },
+  "bugs": {
+    "url": "https://github.com/marquesantero/vorchestra/issues"
+  },
+  "license": "Apache-2.0",
+  "author": "Marco Antero",
+  "keywords": [
+    "python",
+    "venv",
+    "virtualenv",
+    "uv",
+    "pip",
+    "tauri",
+    "desktop",
+    "package-manager"
+  ],
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "check:frontend": "tsc --noEmit",
+    "check:rust": "cd src-tauri && cargo check",
+    "test:frontend": "vitest run",
+    "test:frontend:app": "vitest run src/components/__tests__/appOverlays.test.tsx src/components/__tests__/modalFlows.test.tsx",
+    "test:frontend:components": "vitest run src/components/__tests__ src/components/Studio/__tests__",
+    "test:frontend:hooks": "vitest run src/hooks src/services src/utils",
+    "test:frontend:product": "vitest run src/components/__tests__/productHarness.test.tsx",
+    "test:frontend:smoke": "vitest run src/components/Studio/__tests__/packageUiSmoke.test.tsx",
+    "test:rust": "cd src-tauri && cargo test",
+    "check": "npm run check:frontend && npm run test:frontend && npm run check:rust",
+    "preview": "vite preview",
+    "tauri": "tauri"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "~2.0.0",
+    "@tauri-apps/plugin-dialog": "~2.0.0",
+    "@tauri-apps/plugin-fs": "^2.4.5",
+    "@tauri-apps/plugin-opener": "~2.0.0",
+    "@tauri-apps/plugin-sql": "~2.0.0",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.479.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "reactflow": "^11.11.4",
+    "tailwind-merge": "^3.0.2"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.2.1",
+    "@tauri-apps/cli": "~2.0.0",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.6",
+    "@vitejs/plugin-react": "^4.6.0",
+    "autoprefixer": "^10.4.27",
+    "jsdom": "^29.1.1",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^4.2.1",
+    "typescript": "~5.8.3",
+    "vite": "^7.0.4",
+    "vitest": "^4.1.7"
+  }
+}

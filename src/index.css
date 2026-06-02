@@ -1,0 +1,308 @@
+@import "tailwindcss";
+
+@theme {
+  /*
+   * VOrchestra UI palette
+   *
+   * The app already encodes intent through Tailwind families:
+   * - slate: structure, surfaces, muted copy
+   * - blue: primary/product operations
+   * - amber: caution, pending work, guidance
+   * - green: verified/safe states
+   * - red: destructive or broken states
+   *
+   * These scales are tuned for both light and dark themes by pairing
+   * low-number utilities with soft containers and high-number utilities
+   * with dark-mode surfaces. This keeps emphasis consistent without
+   * rewriting every component class.
+   */
+  --color-primary: var(--color-blue-600);
+
+  --color-slate-50: #f6f1e8;
+  --color-slate-100: #ece4d6;
+  --color-slate-200: #d9cdbc;
+  --color-slate-300: #c1b29e;
+  --color-slate-400: #9c8d7a;
+  --color-slate-500: #71685d;
+  --color-slate-600: #485a72;
+  --color-slate-700: #344256;
+  --color-slate-800: #202b3a;
+  --color-slate-900: #121a26;
+  --color-slate-950: #090f18;
+
+  --color-blue-50: #eaf8ff;
+  --color-blue-100: #caecff;
+  --color-blue-200: #99d9ff;
+  --color-blue-300: #5fbfff;
+  --color-blue-400: #2aa1f2;
+  --color-blue-500: #0f86db;
+  --color-blue-600: #066bb7;
+  --color-blue-700: #075590;
+  --color-blue-800: #0b476f;
+  --color-blue-900: #0c3b5d;
+  --color-blue-950: #061d30;
+
+  --color-amber-50: #fff7e6;
+  --color-amber-100: #ffe7b3;
+  --color-amber-200: #ffd17a;
+  --color-amber-300: #ffb13b;
+  --color-amber-400: #f69518;
+  --color-amber-500: #d97706;
+  --color-amber-600: #b85f00;
+  --color-amber-700: #924a06;
+  --color-amber-800: #773d0b;
+  --color-amber-900: #64340e;
+  --color-amber-950: #351806;
+
+  --color-green-50: #ecfdf4;
+  --color-green-100: #d1fae3;
+  --color-green-200: #a7f3ca;
+  --color-green-300: #6ee7a8;
+  --color-green-400: #35d07f;
+  --color-green-500: #13ad62;
+  --color-green-600: #07884b;
+  --color-green-700: #066d3e;
+  --color-green-800: #075633;
+  --color-green-900: #06472d;
+  --color-green-950: #022817;
+
+  --color-red-50: #fff1f1;
+  --color-red-100: #ffe0e0;
+  --color-red-200: #ffc7c7;
+  --color-red-300: #ffa0a0;
+  --color-red-400: #ff6969;
+  --color-red-500: #ee3d3d;
+  --color-red-600: #cf2424;
+  --color-red-700: #a91d1d;
+  --color-red-800: #8c1d1d;
+  --color-red-900: #741f1f;
+  --color-red-950: #3f0b0b;
+}
+
+/* Enable class-based dark mode in Tailwind v4 */
+@variant dark (&:where(.dark, .dark *));
+
+@layer base {
+  :root {
+    color-scheme: light;
+    background: var(--color-slate-100);
+    color: var(--color-slate-800);
+  }
+
+  .dark {
+    color-scheme: dark;
+    /*
+     * Dark mode direction: Monokai-inspired. The app background is the
+     * editor canvas, cards are solid warm charcoal blocks, and saturated
+     * colors are reserved for state/action highlights.
+     */
+    --color-slate-50: #f8f8f2;
+    --color-slate-100: #e6e6dc;
+    --color-slate-200: #d1d0c3;
+    --color-slate-300: #b8b6a6;
+    --color-slate-400: #9a9788;
+    --color-slate-500: #797667;
+    --color-slate-600: #5f5b4b;
+    --color-slate-700: #49483e;
+    --color-slate-800: #3e3d32;
+    --color-slate-900: #2f3028;
+    --color-slate-950: #272822;
+
+    --color-blue-50: #eefaff;
+    --color-blue-100: #d5f3ff;
+    --color-blue-200: #a6e8ff;
+    --color-blue-300: #66d9ef;
+    --color-blue-400: #35c7e0;
+    --color-blue-500: #19abc7;
+    --color-blue-600: #0f89a3;
+    --color-blue-700: #116d82;
+    --color-blue-800: #145667;
+    --color-blue-900: #123d4a;
+    --color-blue-950: #0b242e;
+
+    background: var(--color-slate-950);
+    color: var(--color-slate-50);
+  }
+
+  html,
+  body,
+  #root {
+    min-height: 100%;
+  }
+
+  body {
+    margin: 0;
+    background:
+      radial-gradient(circle at top left, color-mix(in srgb, var(--color-blue-100) 45%, transparent), transparent 34rem),
+      linear-gradient(135deg, var(--color-slate-50), var(--color-slate-100));
+    color: var(--color-slate-800);
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  .dark body {
+    background:
+      radial-gradient(circle at top left, rgb(102 217 239 / 0.14), transparent 30rem),
+      radial-gradient(circle at bottom right, rgb(249 38 114 / 0.08), transparent 34rem),
+      linear-gradient(135deg, #1f201b, #272822 46%, #202119);
+    color: var(--color-slate-50);
+  }
+
+  ::selection {
+    background: var(--color-blue-200);
+    color: var(--color-blue-950);
+  }
+
+  .dark ::selection {
+    background: var(--color-blue-800);
+    color: var(--color-blue-50);
+  }
+
+  :where(button, input, textarea, select, a):focus-visible {
+    outline: 2px solid var(--color-blue-500);
+    outline-offset: 2px;
+  }
+
+  :where(button, [role="button"]) {
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+@layer utilities {
+  /*
+   * Light mode should feel like a warm workspace, not a blank white page.
+   * Many components intentionally use `bg-white` for top-level cards; tinting
+   * that utility in light mode gives the whole product consistent depth while
+   * preserving dark mode and semantic status colors.
+   */
+  :root:not(.dark) .bg-white {
+    background-color: #fffaf1;
+  }
+
+  :root:not(.dark) .bg-white\/90 {
+    background-color: rgb(255 250 241 / 0.9);
+  }
+
+  :root:not(.dark) .bg-white\/80 {
+    background-color: rgb(255 250 241 / 0.8);
+  }
+
+  :root:not(.dark) .bg-white\/70 {
+    background-color: rgb(255 250 241 / 0.7);
+  }
+
+  :root:not(.dark) .hover\:bg-white:hover {
+    background-color: #fffaf1;
+  }
+
+  .vo-app-bg {
+    background:
+      radial-gradient(circle at top left, color-mix(in srgb, var(--color-blue-100) 48%, transparent), transparent 34rem),
+      linear-gradient(135deg, #efe6d6, #e7dccb);
+  }
+
+  .dark .vo-app-bg {
+    background:
+      radial-gradient(circle at top left, rgb(102 217 239 / 0.14), transparent 30rem),
+      radial-gradient(circle at bottom right, rgb(249 38 114 / 0.08), transparent 34rem),
+      linear-gradient(135deg, #1f201b, #272822 46%, #202119);
+  }
+
+  .vo-surface {
+    background-color: #fffdf8;
+    border-color: #d8cab8;
+  }
+
+  .dark .vo-surface {
+    background-color: #3e3d32;
+    border-color: #5a5748;
+  }
+
+  .vo-panel {
+    background-color: #f8f1e5;
+    border-color: #ded0bd;
+  }
+
+  .dark .vo-panel {
+    background-color: #34352d;
+    border-color: #514f42;
+  }
+
+  .vo-subpanel {
+    background-color: #f1e7d8;
+    border-color: #d6c7b4;
+  }
+
+  .dark .vo-subpanel {
+    background-color: #2f3028;
+    border-color: #4a493d;
+  }
+
+  .vo-control {
+    background-color: #fffaf1;
+    border-color: #d8cab8;
+  }
+
+  .dark .vo-control {
+    background-color: #272822;
+    border-color: #5a5748;
+  }
+
+  .vo-icon-button {
+    display: inline-flex;
+    min-width: 2rem;
+    min-height: 2rem;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.75rem;
+    border: 1px solid transparent;
+  }
+
+  .vo-icon-button:hover {
+    background-color: #f1e7d8;
+    border-color: #d6c7b4;
+  }
+
+  .dark .vo-icon-button:hover {
+    background-color: #49483e;
+    border-color: #696653;
+  }
+
+  .vo-primary-action {
+    background-color: var(--color-blue-600);
+    color: white;
+  }
+
+  .vo-primary-action:hover {
+    background-color: var(--color-blue-700);
+  }
+
+  .vo-secondary-action {
+    background-color: #f1e7d8;
+    color: var(--color-slate-700);
+    border: 1px solid #d6c7b4;
+  }
+
+  .vo-secondary-action:hover {
+    background-color: #e9ddcc;
+  }
+
+  .dark .vo-secondary-action {
+    background-color: #49483e;
+    color: var(--color-slate-200);
+    border-color: #696653;
+  }
+
+  .dark .vo-secondary-action:hover {
+    background-color: #5a5748;
+  }
+}
+
+/* Smooth transition for theme switching */
+* {
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 200ms;
+}

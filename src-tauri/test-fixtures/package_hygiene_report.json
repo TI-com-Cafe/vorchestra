@@ -1,0 +1,5 @@
+{
+  "root_packages": ["fastapi", "pytest"],
+  "dependency_packages": ["anyio", "pydantic"],
+  "total_packages": 4
+}

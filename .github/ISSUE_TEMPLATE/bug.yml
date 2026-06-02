@@ -1,0 +1,98 @@
+name: Bug report
+description: Report a defect in VOrchestra
+title: "[bug] "
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug. Please fill in as much as you can — the more context you provide, the faster we can fix it.
+
+  - type: input
+    id: version
+    attributes:
+      label: VOrchestra version
+      description: Run `vorchestra --version`, or check the bundle metadata, or paste the commit SHA if you built from source.
+      placeholder: "0.1.0"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options:
+        - Linux
+        - macOS
+        - Windows
+    validations:
+      required: true
+
+  - type: input
+    id: os-version
+    attributes:
+      label: OS version
+      placeholder: "Ubuntu 24.04 / macOS 14.5 / Windows 11 23H2"
+    validations:
+      required: true
+
+  - type: input
+    id: python
+    attributes:
+      label: Python version (if relevant)
+      placeholder: "3.12.3"
+
+  - type: dropdown
+    id: engine
+    attributes:
+      label: Affected engine
+      options:
+        - pip
+        - uv
+        - both
+        - n/a
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: Be specific. "Open Studio, click X, observe Y."
+      placeholder: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / screenshots
+      description: Paste any relevant terminal output or screenshots. For Tauri logs, run with `RUST_LOG=debug npm run tauri dev`.
+      render: shell
+
+  - type: checkboxes
+    id: confirm
+    attributes:
+      label: Confirmation
+      options:
+        - label: I searched existing issues and did not find a duplicate.
+          required: true
+        - label: I am running a supported version (see CHANGELOG.md).
+          required: true

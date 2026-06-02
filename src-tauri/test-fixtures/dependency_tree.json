@@ -1,0 +1,18 @@
+[
+  {
+    "package_name": "fastapi",
+    "installed_version": "0.115.0",
+    "dependencies": [
+      {
+        "package_name": "pydantic",
+        "installed_version": "2.8.2",
+        "dependencies": []
+      },
+      {
+        "package_name": "starlette",
+        "installed_version": "0.38.0",
+        "dependencies": []
+      }
+    ]
+  }
+]
