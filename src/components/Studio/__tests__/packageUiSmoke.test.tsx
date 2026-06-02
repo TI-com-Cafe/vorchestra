@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { PackageStatsCards } from "../PackageStatsCards";
 import { JobActionBanner } from "../JobActionBanner";
@@ -112,11 +112,13 @@ describe("Studio package UI smoke tests", () => {
     );
 
     expect(screen.getByText("220/220 shown")).toBeInTheDocument();
-    expect(screen.getByText("180 rendered")).toBeInTheDocument();
+    expect(screen.getByText("26 rendered")).toBeInTheDocument();
     expect(screen.getByText("pkg-001")).toBeInTheDocument();
     expect(screen.queryByText("pkg-220")).not.toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole("button", { name: /render 40 more packages/i }));
+    const list = screen.getByRole("list", { name: /installed packages/i });
+    Object.defineProperty(list, "scrollTop", { value: 15000, writable: true });
+    fireEvent.scroll(list);
     expect(screen.getByText("pkg-220")).toBeInTheDocument();
   });
 

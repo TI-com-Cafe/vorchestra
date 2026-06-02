@@ -1,14 +1,16 @@
-import React, { useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { ChevronRight, ChevronDown, Package, Layers, Info, Loader2, RefreshCcw, Search } from "lucide-react";
 import { VenvInfo } from "../../types";
 import { packageService, needsElevation, stripElevationPrefix } from "../../services/packageManager";
+import { useVirtualWindow } from "../../hooks/useVirtualWindow";
 
 interface StudioDependencyTreeProps {
   venv: VenvInfo;
 }
 
 const packageLabel = (node: any): string => `${node.package_name || node.name || ""} ${node.installed_version || node.version || ""}`.trim();
+const TREE_ROW_HEIGHT = 40;
 
 const filterTree = (nodes: any[], query: string): any[] => {
   const normalized = query.trim().toLowerCase();
@@ -25,67 +27,72 @@ const filterTree = (nodes: any[], query: string): any[] => {
     .filter(Boolean);
 };
 
-const TreeItem: React.FC<{ node: any, depth: number, forceOpen?: boolean, collapseToken?: number }> = React.memo(({ node, depth, forceOpen = false, collapseToken = 0 }) => {
-  const [isOpen, setIsOpen] = useState(false); // Lazy expansion
-  const [visibleChildren, setVisibleChildren] = useState(80); // Incremental rendering for huge dependency sets
-  const hasChildren = node.dependencies && node.dependencies.length > 0;
-  
+interface TreeRow {
+  id: string;
+  node: any;
+  depth: number;
+}
+
+const nodeIdPart = (node: any, index: number): string => {
+  const name = node.package_name || node.name || "node";
+  const version = node.installed_version || node.version || "";
+  return `${name}@${version}#${index}`;
+};
+
+const flattenTree = (
+  nodes: any[],
+  expanded: Set<string>,
+  forceOpen: boolean,
+  depth = 0,
+  parentId = ""
+): TreeRow[] => {
+  const rows: TreeRow[] = [];
+  nodes.forEach((node, index) => {
+    const id = parentId ? `${parentId}/${nodeIdPart(node, index)}` : nodeIdPart(node, index);
+    rows.push({ id, node, depth });
+    const deps = node.dependencies || [];
+    if (deps.length > 0 && (forceOpen || expanded.has(id))) {
+      rows.push(...flattenTree(deps, expanded, forceOpen, depth + 1, id));
+    }
+  });
+  return rows;
+};
+
+const TreeRowItem: React.FC<{
+  row: TreeRow;
+  isOpen: boolean;
+  forceOpen: boolean;
+  onToggle: (id: string) => void;
+}> = React.memo(({ row, isOpen, forceOpen, onToggle }) => {
+  const { node, depth, id } = row;
+  const deps = node.dependencies || [];
+  const hasChildren = deps.length > 0;
   const name = node.package_name || node.name;
   const version = node.installed_version || node.version;
-  const deps = node.dependencies || [];
-
-  useEffect(() => {
-    if (forceOpen) setIsOpen(true);
-    if (isOpen || forceOpen) setVisibleChildren(80);
-  }, [forceOpen, isOpen, name]);
-
-  useEffect(() => {
-    if (!forceOpen) setIsOpen(false);
-    setVisibleChildren(80);
-  }, [collapseToken, forceOpen]);
-
-  const nodeId = `${name}@${version}`;
+  const expanded = forceOpen || isOpen;
 
   return (
-    <div className="ml-4">
-      <div 
-        className={`flex items-center gap-2 py-1.5 px-2 rounded-xl transition-all ${hasChildren ? "cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/20" : ""}`}
-        onClick={() => hasChildren && setIsOpen(!isOpen)}
-      >
-        {hasChildren ? (
-          isOpen ? <ChevronDown size={14} className="text-blue-500"/> : <ChevronRight size={14} className="text-slate-400"/>
-        ) : <div className="w-[14px]"/>}
-        
-        <Package size={14} className={depth === 0 ? "text-blue-600" : "text-slate-400"}/>
-        <span className={`text-xs font-bold ${depth === 0 ? "text-slate-900 dark:text-white" : "text-slate-600 dark:text-slate-400"}`}>
-          {name}
-        </span>
-        <span className="text-[10px] font-mono text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded-md">
-          {version}
-        </span>
-      </div>
+    <div
+      className={`flex items-center gap-2 py-1.5 px-2 rounded-xl transition-all ${hasChildren ? "cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/20" : ""}`}
+      style={{ paddingLeft: `${8 + depth * 22}px` }}
+      onClick={() => hasChildren && onToggle(id)}
+      role="treeitem"
+      aria-expanded={hasChildren ? expanded : undefined}
+    >
+      {hasChildren ? (
+        expanded ? <ChevronDown size={14} className="text-blue-500"/> : <ChevronRight size={14} className="text-slate-400"/>
+      ) : <div className="w-[14px]"/>}
       
-      {/* PERFORMANCE CRITICAL: Only render children if isOpen is true */}
-      {isOpen && hasChildren && (
-        <div className="border-l-2 border-slate-100 dark:border-slate-800 ml-3.5 mt-1 animate-in slide-in-from-left-2 duration-200">
-          {deps.slice(0, visibleChildren).map((dep: any, i: number) => (
-            <TreeItem key={`${nodeId}::${dep.package_name || dep.name || "dep"}-${i}`} node={dep} depth={depth + 1} forceOpen={forceOpen} collapseToken={collapseToken} />
-          ))}
-          {deps.length > visibleChildren && (
-            <div className="ml-6 py-2">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setVisibleChildren(prev => prev + 80);
-                }}
-                className="text-[10px] font-black uppercase tracking-wide text-blue-600 hover:underline"
-              >
-                Load more ({deps.length - visibleChildren} remaining)
-              </button>
-            </div>
-          )}
-        </div>
-      )}
+      <Package size={14} className={depth === 0 ? "text-blue-600" : "text-slate-400"}/>
+      <span
+        className={`truncate text-xs font-bold ${depth === 0 ? "text-slate-900 dark:text-white" : "text-slate-600 dark:text-slate-400"}`}
+        title={name}
+      >
+        {name}
+      </span>
+      <span className="shrink-0 text-[10px] font-mono text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded-md">
+        {version}
+      </span>
     </div>
   );
 });
@@ -94,9 +101,8 @@ export const StudioDependencyTree: React.FC<StudioDependencyTreeProps> = ({ venv
   const [tree, setTree] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [visibleRoots, setVisibleRoots] = useState(120);
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [query, setQuery] = useState("");
-  const [collapseToken, setCollapseToken] = useState(0);
   const [treeProgress, setTreeProgress] = useState<string | null>(null);
   const [installingTool, setInstallingTool] = useState(false);
   const [installingElevated, setInstallingElevated] = useState(false);
@@ -134,7 +140,7 @@ export const StudioDependencyTree: React.FC<StudioDependencyTreeProps> = ({ venv
         }
       });
       setTree(Array.isArray(data) ? data : [data]);
-      setVisibleRoots(120);
+      setExpandedRows(new Set());
     } catch (err: any) {
       setError(err.toString());
     } finally {
@@ -155,6 +161,30 @@ export const StudioDependencyTree: React.FC<StudioDependencyTreeProps> = ({ venv
   useEffect(() => {
     fetchTree(false);
   }, [venv.path, venv.manager_type]);
+
+  const displayedTree = filterTree(tree, query);
+  const searching = query.trim().length > 0;
+  const visibleRows = useMemo(
+    () => flattenTree(displayedTree, expandedRows, searching),
+    [displayedTree, expandedRows, searching]
+  );
+  const virtual = useVirtualWindow({
+    total: visibleRows.length,
+    rowHeight: TREE_ROW_HEIGHT,
+    overscan: 12
+  });
+  const renderedRows = useMemo(
+    () => visibleRows.slice(virtual.start, virtual.end),
+    [virtual.end, virtual.start, visibleRows]
+  );
+  const toggleRow = (id: string) => {
+    setExpandedRows(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   if (loading) {
     return (
@@ -259,9 +289,6 @@ export const StudioDependencyTree: React.FC<StudioDependencyTreeProps> = ({ venv
     );
   }
 
-  const displayedTree = filterTree(tree, query);
-  const searching = query.trim().length > 0;
-
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="vo-surface flex flex-col lg:flex-row lg:items-center justify-between gap-3 rounded-[1.5rem] border p-4">
@@ -275,18 +302,19 @@ export const StudioDependencyTree: React.FC<StudioDependencyTreeProps> = ({ venv
               value={query}
               onChange={(event) => {
                 setQuery(event.target.value);
-                setVisibleRoots(120);
               }}
               placeholder="Search dependency tree..."
               className="w-56 bg-transparent outline-none text-[10px] font-bold text-slate-700 dark:text-slate-200 placeholder:text-slate-400"
             />
           </label>
           <p className="text-[9px] font-bold text-slate-400 uppercase">Click arrows to expand dependencies lazily</p>
+          {visibleRows.length > virtual.renderedCount && (
+            <p className="text-[9px] font-bold text-slate-400 uppercase">{virtual.renderedCount}/{visibleRows.length} rows rendered</p>
+          )}
           <button
             onClick={() => {
               setQuery("");
-              setVisibleRoots(120);
-              setCollapseToken(prev => prev + 1);
+              setExpandedRows(new Set());
             }}
             className="flex items-center gap-1 text-[9px] font-black uppercase tracking-wide text-slate-500 hover:text-blue-600 hover:underline"
           >
@@ -308,17 +336,27 @@ export const StudioDependencyTree: React.FC<StudioDependencyTreeProps> = ({ venv
             <p className="text-xs font-black uppercase tracking-widest text-slate-400">No dependency nodes match this search</p>
             <p className="mt-2 text-[10px] font-bold text-slate-500 dark:text-slate-400">Clear the search or reduce the query to a package name fragment.</p>
           </div>
-        ) : displayedTree.slice(0, visibleRoots).map((node, i) => (
-          <TreeItem key={`${node.package_name || node.name || "root"}-${i}`} node={node} depth={0} forceOpen={searching} collapseToken={collapseToken} />
-        ))}
-        {displayedTree.length > visibleRoots && (
-          <div className="ml-2 mt-4">
-            <button
-              onClick={() => setVisibleRoots(prev => prev + 120)}
-              className="text-[10px] font-black uppercase tracking-wide text-blue-600 hover:underline"
-            >
-              Load more roots ({displayedTree.length - visibleRoots} remaining)
-            </button>
+        ) : (
+          <div
+            ref={virtual.containerRef}
+            onScroll={virtual.onScroll}
+            className="max-h-[680px] overflow-y-auto pr-1"
+            role="tree"
+            aria-label="Dependency tree"
+          >
+            <div style={{ height: virtual.topPadding }} />
+            <div className="space-y-1">
+              {renderedRows.map(row => (
+                <TreeRowItem
+                  key={row.id}
+                  row={row}
+                  isOpen={expandedRows.has(row.id)}
+                  forceOpen={searching}
+                  onToggle={toggleRow}
+                />
+              ))}
+            </div>
+            <div style={{ height: virtual.bottomPadding }} />
           </div>
         )}
       </div>

@@ -1270,6 +1270,35 @@ describe("product harness coverage", () => {
     expect(screen.queryByText("starlette")).not.toBeInTheDocument();
   });
 
+  it("virtualizes expanded dependency trees", async () => {
+    dependencyPrereqMock.mockResolvedValue({ ok: true });
+    dependencyTreeMock.mockResolvedValue([
+      {
+        package_name: "rootpkg",
+        installed_version: "1.0.0",
+        dependencies: Array.from({ length: 180 }, (_, index) => ({
+          package_name: `dep-${String(index + 1).padStart(3, "0")}`,
+          installed_version: "1.0.0",
+          dependencies: []
+        }))
+      }
+    ]);
+
+    render(<StudioDependencyTree venv={pipVenv} />);
+
+    const root = await screen.findByText("rootpkg");
+    await userEvent.click(root);
+
+    expect(await screen.findByText("dep-001")).toBeInTheDocument();
+    expect(screen.queryByText("dep-180")).not.toBeInTheDocument();
+
+    const treeRegion = screen.getByRole("tree", { name: /dependency tree/i });
+    Object.defineProperty(treeRegion, "scrollTop", { value: 7200, writable: true });
+    fireEvent.scroll(treeRegion);
+
+    expect(await screen.findByText("dep-180")).toBeInTheDocument();
+  });
+
   it("explains package manifest view tradeoffs", () => {
     const props = {
       viewMode: "list" as const,

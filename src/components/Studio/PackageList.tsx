@@ -1,5 +1,6 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { ArrowUpCircle, FileQuestion, Info, Search, SlidersHorizontal, Trash2 } from "lucide-react";
+import { useVirtualWindow } from "../../hooks/useVirtualWindow";
 
 interface PackageListProps {
   packages: string[];
@@ -17,8 +18,7 @@ type PackageSort = "name" | "size_desc" | "size_asc";
 type PackageFilter = "all" | "large" | "known_size" | "unknown_size";
 
 const LARGE_PACKAGE_MB = 25;
-const INITIAL_RENDER_LIMIT = 180;
-const RENDER_INCREMENT = 180;
+const PACKAGE_ROW_HEIGHT = 68;
 
 export const PackageList: React.FC<PackageListProps> = ({
   packages,
@@ -34,7 +34,6 @@ export const PackageList: React.FC<PackageListProps> = ({
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<PackageSort>("name");
   const [filter, setFilter] = useState<PackageFilter>("all");
-  const [renderLimit, setRenderLimit] = useState(INITIAL_RENDER_LIMIT);
 
   const visiblePackages = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
@@ -62,13 +61,15 @@ export const PackageList: React.FC<PackageListProps> = ({
       });
   }, [filter, packageSizes, packages, query, sort]);
 
-  useEffect(() => {
-    setRenderLimit(INITIAL_RENDER_LIMIT);
-  }, [filter, packages, query, sort]);
+  const virtual = useVirtualWindow({
+    total: visiblePackages.length,
+    rowHeight: PACKAGE_ROW_HEIGHT,
+    overscan: 8
+  });
 
   const renderedPackages = useMemo(
-    () => visiblePackages.slice(0, renderLimit),
-    [renderLimit, visiblePackages]
+    () => visiblePackages.slice(virtual.start, virtual.end),
+    [virtual.end, virtual.start, visiblePackages]
   );
 
   const packageSummary = useMemo(() => {
@@ -132,8 +133,8 @@ export const PackageList: React.FC<PackageListProps> = ({
         </label>
         <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 md:min-w-40 md:text-right leading-relaxed">
           <div>{visiblePackages.length}/{packages.length} shown</div>
-          {visiblePackages.length > renderedPackages.length && (
-            <div>{renderedPackages.length} rendered</div>
+          {visiblePackages.length > virtual.renderedCount && (
+            <div>{virtual.renderedCount} rendered</div>
           )}
           <div>
             {packageSummary.visibleSizeMb.toFixed(1)} MB visible
@@ -171,13 +172,20 @@ export const PackageList: React.FC<PackageListProps> = ({
           <p className="text-xs font-black uppercase tracking-widest text-slate-400">No packages match this filter</p>
         </div>
       ) : (
-        <>
-        <div className="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-2.5">
+        <div
+          ref={virtual.containerRef}
+          onScroll={virtual.onScroll}
+          className="max-h-[660px] overflow-y-auto pr-1"
+          role="list"
+          aria-label="Installed packages"
+        >
+          <div style={{ height: virtual.topPadding }} />
+          <div className="space-y-2">
           {renderedPackages.map((pkg) => {
             const { name, version, size } = pkg;
 
             return (
-              <div key={pkg.id} className="vo-surface flex justify-between items-center gap-3 p-3 border rounded-2xl transition-all hover:border-blue-500/40 group">
+              <div key={pkg.id} role="listitem" className="vo-surface flex min-h-[60px] justify-between items-center gap-3 p-3 border rounded-2xl transition-all hover:border-blue-500/40 group">
                 <div className="flex min-w-0 flex-col">
                   <div className="flex items-center gap-2">
                     <span className="truncate font-black text-slate-800 dark:text-slate-200">{name}</span>
@@ -202,17 +210,9 @@ export const PackageList: React.FC<PackageListProps> = ({
               </div>
             );
           })}
+          </div>
+          <div style={{ height: virtual.bottomPadding }} />
         </div>
-        {visiblePackages.length > renderedPackages.length && (
-          <button
-            onClick={() => setRenderLimit(prev => prev + RENDER_INCREMENT)}
-            className="vo-secondary-action w-full rounded-2xl px-4 py-3 text-[10px] font-black uppercase tracking-widest"
-          >
-            Render {Math.min(RENDER_INCREMENT, visiblePackages.length - renderedPackages.length)} more package{Math.min(RENDER_INCREMENT, visiblePackages.length - renderedPackages.length) === 1 ? "" : "s"}
-            {" "}({visiblePackages.length - renderedPackages.length} remaining)
-          </button>
-        )}
-        </>
       )}
     </div>
   );
