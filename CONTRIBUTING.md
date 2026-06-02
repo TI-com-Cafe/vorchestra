@@ -28,11 +28,36 @@ Recommended optional tools:
 ## Setup
 
 ```bash
-git clone https://github.com/marquesantero/vorchestra.git
+git clone https://github.com/TI-com-Cafe/vorchestra.git
 cd vorchestra
 npm install
 npm run tauri dev
 ```
+
+## Contribution Flow
+
+`main` is protected. Direct pushes are not accepted for normal contribution work.
+
+1. Fork the repository or create a topic branch from `main`.
+2. Keep the branch focused on one feature, bug fix, or documentation area.
+3. Run targeted validation while developing.
+4. Run the broader checks before opening the PR when the change is cross-cutting.
+5. Open a pull request against `main`.
+6. Fill in the PR description with scope, risk, and validation performed.
+7. Wait for CI to pass.
+8. Address review feedback without force-pushing over reviewer context unless necessary.
+9. Keep the PR branch up to date with `main` when GitHub reports it is behind.
+
+Current `main` merge requirements:
+
+- One approving review.
+- Stale reviews are dismissed when new commits are pushed.
+- The last pusher cannot approve their own final push.
+- All required CI checks must pass.
+- The PR branch must be up to date with `main`.
+- Review conversations must be resolved.
+- Linear history is required.
+- Force-pushes and branch deletion on `main` are blocked.
 
 ## Validation Strategy
 
@@ -62,8 +87,10 @@ cd src-tauri && cargo test --all-targets
 ## Pull Request Guidelines
 
 - Branch from `main`.
+- Do not open broad refactor PRs mixed with product changes.
 - Keep PRs focused on one behavior, screen, command group, or doc area.
 - Include a short test plan.
+- Link related issues when applicable.
 - Add tests when changing parsers, package operations, background jobs, or core state hooks.
 - Include screenshots/GIFs for visible UI changes.
 - Update `CHANGELOG.md` under `[Unreleased]` when behavior changes.
