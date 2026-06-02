@@ -2,10 +2,7 @@
 
 use std::sync::atomic::AtomicBool;
 
-use crate::helpers::{
-    classify_install_error, ensure_venv_dir, run_command_with_timeout,
-    run_command_with_timeout_and_cancel,
-};
+use crate::helpers::{classify_install_error, ensure_venv_dir, run_command_with_timeout};
 use crate::package_managers::manager_for_engine;
 pub use crate::package_managers::InstallOptions;
 use crate::process_utils::run_command_with_timeout_cancel_and_output;
@@ -76,11 +73,24 @@ pub fn uninstall_package_internal(
     engine: String,
     cancel: Option<&AtomicBool>,
 ) -> Result<String, String> {
+    uninstall_package_with_output_internal(venv_path, package, engine, cancel, |_, _| {})
+}
+
+pub fn uninstall_package_with_output_internal<F>(
+    venv_path: String,
+    package: String,
+    engine: String,
+    cancel: Option<&AtomicBool>,
+    on_output_line: F,
+) -> Result<String, String>
+where
+    F: FnMut(&str, &str),
+{
     let venv = ensure_venv_dir(&venv_path)?;
     let manager = manager_for_engine(&engine)?;
     let package_command = manager.uninstall_command(&venv, &package);
     let mut cmd = package_command.to_command();
-    let out = run_with_optional_cancel(&mut cmd, 300, cancel)?;
+    let out = run_with_optional_cancel_and_output(&mut cmd, 300, cancel, on_output_line)?;
     if out.status.success() {
         Ok(manager.uninstall_success_message(&package))
     } else {
@@ -96,11 +106,24 @@ pub fn update_package_internal(
     engine: String,
     cancel: Option<&AtomicBool>,
 ) -> Result<String, String> {
+    update_package_with_output_internal(venv_path, package, engine, cancel, |_, _| {})
+}
+
+pub fn update_package_with_output_internal<F>(
+    venv_path: String,
+    package: String,
+    engine: String,
+    cancel: Option<&AtomicBool>,
+    on_output_line: F,
+) -> Result<String, String>
+where
+    F: FnMut(&str, &str),
+{
     let venv = ensure_venv_dir(&venv_path)?;
     let manager = manager_for_engine(&engine)?;
     let package_command = manager.update_command(&venv, &package);
     let mut cmd = package_command.to_command();
-    let out = run_with_optional_cancel(&mut cmd, 600, cancel)?;
+    let out = run_with_optional_cancel_and_output(&mut cmd, 600, cancel, on_output_line)?;
     if out.status.success() {
         Ok(manager.update_success_message(&package))
     } else {
@@ -133,18 +156,6 @@ where
 {
     if let Some(cancel) = cancel {
         run_command_with_timeout_cancel_and_output(cmd, timeout_secs, cancel, on_output_line)
-    } else {
-        run_command_with_timeout(cmd, timeout_secs)
-    }
-}
-
-fn run_with_optional_cancel(
-    cmd: &mut std::process::Command,
-    timeout_secs: u64,
-    cancel: Option<&AtomicBool>,
-) -> Result<std::process::Output, String> {
-    if let Some(cancel) = cancel {
-        run_command_with_timeout_and_cancel(cmd, timeout_secs, cancel)
     } else {
         run_command_with_timeout(cmd, timeout_secs)
     }

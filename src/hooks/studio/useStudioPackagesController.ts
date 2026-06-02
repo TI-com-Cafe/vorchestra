@@ -202,7 +202,12 @@ export function useStudioPackagesController({
     try {
       setPendingUninstall(null);
       await packageService.uninstall(venv, pkgName, {
-        onJobStarted: (jobId) => setPackageAction({ jobId, label: `Uninstalling ${pkgName}` })
+        onJobStarted: (jobId) => setPackageAction({ jobId, label: `Uninstalling ${pkgName}` }),
+        onUpdate: (snapshot) => {
+          const lastLog = snapshot.logs?.[snapshot.logs.length - 1];
+          if (lastLog) setMessage(lastLog);
+          else if (snapshot.message) setMessage(snapshot.message);
+        }
       });
       setMessage(`Uninstalled ${pkgName}`);
       refresh();
@@ -220,7 +225,12 @@ export function useStudioPackagesController({
     }
     try {
       await packageService.update(venv, pkgName, {
-        onJobStarted: (jobId) => setPackageAction({ jobId, label: `Updating ${pkgName}` })
+        onJobStarted: (jobId) => setPackageAction({ jobId, label: `Updating ${pkgName}` }),
+        onUpdate: (snapshot) => {
+          const lastLog = snapshot.logs?.[snapshot.logs.length - 1];
+          if (lastLog) setMessage(lastLog);
+          else if (snapshot.message) setMessage(snapshot.message);
+        }
       });
       setMessage(`Updated ${pkgName}`);
       refresh();

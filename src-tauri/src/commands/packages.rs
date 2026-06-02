@@ -17,7 +17,8 @@ use crate::package_jobs::{
 pub use crate::package_ops::{
     install_dependency_internal, install_dependency_with_cancel_and_output_internal,
     install_dependency_with_cancel_internal, install_dependency_with_options_internal,
-    install_program_and_args, uninstall_package_internal, update_package_internal, InstallOptions,
+    install_program_and_args, uninstall_package_internal, uninstall_package_with_output_internal,
+    update_package_internal, update_package_with_output_internal, InstallOptions,
 };
 #[cfg(windows)]
 use crate::process_utils::new_command;
@@ -85,11 +86,12 @@ pub fn start_uninstall_package_job(
                 format!("Uninstalling {}...", package),
                 Some(0.2),
             );
-            uninstall_package_internal(
+            uninstall_package_with_output_internal(
                 venv_path,
                 package,
                 engine,
                 Some(blocking_job.cancel.as_ref()),
+                |stream, line| append_job_log(&blocking_job, stream, line),
             )
             .map(serde_json::Value::String)
         })
@@ -118,11 +120,12 @@ pub fn start_update_package_job(
         let blocking_job = job.clone();
         let outcome = tauri::async_runtime::spawn_blocking(move || {
             set_job_progress(&blocking_job, format!("Updating {}...", package), Some(0.2));
-            update_package_internal(
+            update_package_with_output_internal(
                 venv_path,
                 package,
                 engine,
                 Some(blocking_job.cancel.as_ref()),
+                |stream, line| append_job_log(&blocking_job, stream, line),
             )
             .map(serde_json::Value::String)
         })
