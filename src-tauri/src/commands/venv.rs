@@ -4,10 +4,12 @@ use crate::helpers::{
     canonicalize_dir, classify_install_error, default_python_command, detect_manager_type,
     ensure_venv_dir, get_manager_path, get_python_path, get_venv_info, new_command,
     parse_pip_freeze, persist_engine_marker, run_command_with_timeout,
-    run_command_with_timeout_and_cancel, stdout_or_stderr, uv_cache_dir_for,
+    run_command_with_timeout_and_cancel, run_command_with_timeout_cancel_and_output,
+    stdout_or_stderr, uv_cache_dir_for,
 };
 use crate::jobs::{
-    create_background_job, set_job_progress, set_job_status, AppState, BackgroundJobHandle,
+    append_job_log, create_background_job, set_job_progress, set_job_status, AppState,
+    BackgroundJobHandle,
 };
 use crate::package_managers::manager_for_engine;
 use crate::project_manifest::{
@@ -301,12 +303,13 @@ pub fn start_create_venv_with_template_job(
                         Some(start_progress),
                     );
 
-                    crate::commands::packages::install_dependency_with_cancel_internal(
+                    crate::commands::packages::install_dependency_with_cancel_and_output_internal(
                         venv_path.clone(),
                         pkg.clone(),
                         engine.clone(),
                         crate::commands::packages::InstallOptions::default(),
                         Some(blocking_job.cancel.as_ref()),
+                        |stream, line| append_job_log(&blocking_job, stream, line),
                     )
                     .map_err(|err| format!("Failed to install `{}`: {}", pkg, err))?;
                     installed.push(pkg.clone());
@@ -555,7 +558,7 @@ fn install_requirements_file_for_rebuild(
     venv_path: &str,
     engine: &str,
     requirements_path: &Path,
-    cancel: &AtomicBool,
+    job: &BackgroundJobHandle,
 ) -> Result<(), String> {
     let venv = PathBuf::from(venv_path);
     let manager = manager_for_engine(engine)?;
@@ -563,7 +566,12 @@ fn install_requirements_file_for_rebuild(
         .install_requirements_command(&venv, requirements_path)
         .to_command();
 
-    let out = run_command_with_timeout_and_cancel(&mut cmd, 900, cancel)?;
+    let out = run_command_with_timeout_cancel_and_output(
+        &mut cmd,
+        900,
+        job.cancel.as_ref(),
+        |stream, line| append_job_log(job, stream, line),
+    )?;
     if out.status.success() {
         Ok(())
     } else {
@@ -574,7 +582,7 @@ fn install_requirements_file_for_rebuild(
 fn run_uv_sync_for_rebuild(
     rebuilt_path: &str,
     project_root: &Path,
-    cancel: &AtomicBool,
+    job: &BackgroundJobHandle,
 ) -> Result<(), String> {
     let uv = get_manager_path("uv");
     let mut cmd = new_command(uv);
@@ -583,7 +591,12 @@ fn run_uv_sync_for_rebuild(
     cmd.env("UV_CACHE_DIR", uv_cache_dir_for(Path::new(rebuilt_path)));
     cmd.arg("sync");
 
-    let out = run_command_with_timeout_and_cancel(&mut cmd, 900, cancel)?;
+    let out = run_command_with_timeout_cancel_and_output(
+        &mut cmd,
+        900,
+        job.cancel.as_ref(),
+        |stream, line| append_job_log(job, stream, line),
+    )?;
     if out.status.success() {
         Ok(())
     } else {
@@ -674,7 +687,7 @@ pub fn start_rebuild_venv_from_project_job(
                             &rebuilt_path,
                             &engine,
                             &requirements_path,
-                            blocking_job.cancel.as_ref(),
+                            &blocking_job,
                         )?;
                         installed = requirement_entries(&requirements_path);
                         set_job_progress(
@@ -697,7 +710,7 @@ pub fn start_rebuild_venv_from_project_job(
                         run_uv_sync_for_rebuild(
                             &rebuilt_path,
                             &project_root,
-                            blocking_job.cancel.as_ref(),
+                            &blocking_job,
                         )?;
                         installed = detect_rebuild_packages(&project_root);
                         set_job_progress(
@@ -727,12 +740,13 @@ pub fn start_rebuild_venv_from_project_job(
                                 format!("Installing package {} of {}: {}", idx + 1, total, pkg),
                                 Some(progress),
                             );
-                            crate::commands::packages::install_dependency_with_cancel_internal(
+                            crate::commands::packages::install_dependency_with_cancel_and_output_internal(
                                 rebuilt_path.clone(),
                                 pkg.clone(),
                                 engine.clone(),
                                 crate::commands::packages::InstallOptions::default(),
                                 Some(blocking_job.cancel.as_ref()),
+                                |stream, line| append_job_log(&blocking_job, stream, line),
                             )
                             .map_err(|err| format!("Failed to install `{}`: {}", pkg, err))?;
                             installed.push(pkg);
@@ -880,8 +894,12 @@ fn clone_venv_job(
         let mut cmd = manager
             .install_requirements_command(&dest, &tmp)
             .to_command();
-        let install_result =
-            run_command_with_timeout_and_cancel(&mut cmd, 600, job.cancel.as_ref());
+        let install_result = run_command_with_timeout_cancel_and_output(
+            &mut cmd,
+            600,
+            job.cancel.as_ref(),
+            |stream, line| append_job_log(job, stream, line),
+        );
 
         let _ = fs::remove_file(&tmp);
 

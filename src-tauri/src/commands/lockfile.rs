@@ -8,9 +8,12 @@
 
 use crate::helpers::{
     classify_install_error, ensure_venv_dir, parse_pip_freeze, run_command_with_timeout,
-    run_command_with_timeout_and_cancel, stdout_or_stderr,
+    run_command_with_timeout_and_cancel, run_command_with_timeout_cancel_and_output,
+    stdout_or_stderr,
 };
-use crate::jobs::{create_background_job, set_job_progress, set_job_status, AppState};
+use crate::jobs::{
+    append_job_log, create_background_job, set_job_progress, set_job_status, AppState,
+};
 use crate::lockfile_report::build_drift_report;
 use crate::package_managers::manager_for_engine;
 use crate::types::DriftReport;
@@ -155,8 +158,12 @@ pub fn start_restore_from_lockfile_job(
                 "Installing packages from lockfile...",
                 Some(0.35),
             );
-            let out =
-                run_command_with_timeout_and_cancel(&mut cmd, 600, blocking_job.cancel.as_ref())?;
+            let out = run_command_with_timeout_cancel_and_output(
+                &mut cmd,
+                600,
+                blocking_job.cancel.as_ref(),
+                |stream, line| append_job_log(&blocking_job, stream, line),
+            )?;
             if out.status.success() {
                 set_job_progress(&blocking_job, "Lockfile restore finished.", Some(0.95));
                 Ok(serde_json::Value::String(format!(

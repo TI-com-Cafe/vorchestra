@@ -12,10 +12,12 @@
 use crate::commands::venv::create_venv_internal;
 use crate::helpers::{
     canonicalize_dir, classify_install_error, detect_manager_type, ensure_venv_dir,
-    get_python_path, new_command, run_command_with_timeout, run_command_with_timeout_and_cancel,
-    stdout_or_stderr,
+    get_python_path, new_command, run_command_with_timeout,
+    run_command_with_timeout_cancel_and_output, stdout_or_stderr,
 };
-use crate::jobs::{create_background_job, set_job_progress, set_job_status, AppState};
+use crate::jobs::{
+    append_job_log, create_background_job, set_job_progress, set_job_status, AppState,
+};
 use crate::package_managers::manager_for_engine;
 use crate::types::BundleManifest;
 use std::fs::{self, File};
@@ -248,8 +250,12 @@ pub fn start_import_venv_bundle_job(
             let mut cmd = manager
                 .install_requirements_command(&venv, &staged)
                 .to_command();
-            let install_result =
-                run_command_with_timeout_and_cancel(&mut cmd, 600, blocking_job.cancel.as_ref());
+            let install_result = run_command_with_timeout_cancel_and_output(
+                &mut cmd,
+                600,
+                blocking_job.cancel.as_ref(),
+                |stream, line| append_job_log(&blocking_job, stream, line),
+            );
 
             let _ = fs::remove_file(&staged);
 
