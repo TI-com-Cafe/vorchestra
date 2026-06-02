@@ -3,7 +3,9 @@
 //! preview. Includes the elevated retry path for permission failures.
 
 use crate::helpers::ensure_venv_dir;
-use crate::jobs::{create_background_job, set_job_progress, set_job_status, AppState};
+use crate::jobs::{
+    append_job_log, create_background_job, set_job_progress, set_job_status, AppState,
+};
 use crate::package_analysis::{
     check_install_conflicts_job, preview_upgrade_job, why_is_installed_job,
 };
@@ -13,9 +15,9 @@ use crate::package_jobs::{
     get_dependency_tree_job, get_package_sizes_job,
 };
 pub use crate::package_ops::{
-    install_dependency_internal, install_dependency_with_cancel_internal,
-    install_dependency_with_options_internal, install_program_and_args, uninstall_package_internal,
-    update_package_internal, InstallOptions,
+    install_dependency_internal, install_dependency_with_cancel_and_output_internal,
+    install_dependency_with_cancel_internal, install_dependency_with_options_internal,
+    install_program_and_args, uninstall_package_internal, update_package_internal, InstallOptions,
 };
 #[cfg(windows)]
 use crate::process_utils::new_command;
@@ -44,12 +46,13 @@ pub fn start_install_dependency_job(
                 format!("Installing {}...", package),
                 Some(0.2),
             );
-            install_dependency_with_cancel_internal(
+            install_dependency_with_cancel_and_output_internal(
                 venv_path,
                 package,
                 engine,
                 opts,
                 Some(blocking_job.cancel.as_ref()),
+                |stream, line| append_job_log(&blocking_job, stream, line),
             )
             .map(serde_json::Value::String)
         })

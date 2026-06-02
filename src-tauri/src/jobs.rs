@@ -116,6 +116,21 @@ pub fn set_job_progress(
     emit_job_update(handle);
 }
 
+pub fn append_job_log(handle: &BackgroundJobHandle, stream: &str, line: impl AsRef<str>) {
+    let line = line.as_ref().trim();
+    if line.is_empty() {
+        return;
+    }
+    if let Ok(mut snapshot) = handle.snapshot.lock() {
+        snapshot.logs.push(format!("[{}] {}", stream, line));
+        if snapshot.logs.len() > 200 {
+            let overflow = snapshot.logs.len() - 200;
+            snapshot.logs.drain(0..overflow);
+        }
+    }
+    emit_job_update(handle);
+}
+
 pub fn snapshot_json(handle: &BackgroundJobHandle) -> Result<serde_json::Value, String> {
     let snapshot = handle
         .snapshot

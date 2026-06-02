@@ -98,7 +98,15 @@ export function usePyPIExplorerController({ venv, onInstalled, setMessage }: Use
     setMessage(`Installing ${label}...`);
     try {
       await packageService.install(venv, pkg, opts, {
-        onJobStarted: (jobId) => { installJobRef.current = jobId; }
+        onJobStarted: (jobId) => { installJobRef.current = jobId; },
+        onUpdate: (snapshot) => {
+          const lastLog = snapshot.logs?.[snapshot.logs.length - 1];
+          if (lastLog) {
+            setMessage(lastLog);
+            return;
+          }
+          if (snapshot.message) setMessage(snapshot.message);
+        }
       });
       setMessage(`Successfully installed ${label}.`);
       onInstalled();

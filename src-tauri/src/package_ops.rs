@@ -8,6 +8,7 @@ use crate::helpers::{
 };
 use crate::package_managers::manager_for_engine;
 pub use crate::package_managers::InstallOptions;
+use crate::process_utils::run_command_with_timeout_cancel_and_output;
 
 pub fn install_dependency_internal(
     venv_path: String,
@@ -33,12 +34,33 @@ pub fn install_dependency_with_cancel_internal(
     opts: InstallOptions,
     cancel: Option<&AtomicBool>,
 ) -> Result<String, String> {
+    install_dependency_with_cancel_and_output_internal(
+        venv_path,
+        package,
+        engine,
+        opts,
+        cancel,
+        |_, _| {},
+    )
+}
+
+pub fn install_dependency_with_cancel_and_output_internal<F>(
+    venv_path: String,
+    package: String,
+    engine: String,
+    opts: InstallOptions,
+    cancel: Option<&AtomicBool>,
+    on_output_line: F,
+) -> Result<String, String>
+where
+    F: FnMut(&str, &str),
+{
     let venv = ensure_venv_dir(&venv_path)?;
     let manager = manager_for_engine(&engine)?;
     let package_command = manager.install_command(&venv, &package, &opts);
     let mut cmd = package_command.to_command();
 
-    let output = run_with_optional_cancel(&mut cmd, 600, cancel)?;
+    let output = run_with_optional_cancel_and_output(&mut cmd, 600, cancel, on_output_line)?;
     if output.status.success() {
         Ok(manager.install_success_message(&package))
     } else {
@@ -98,6 +120,22 @@ pub fn install_program_and_args(
     let manager = manager_for_engine(engine)?;
     let command = manager.install_command(&venv, package, opts);
     Ok((command.program, command.args))
+}
+
+fn run_with_optional_cancel_and_output<F>(
+    cmd: &mut std::process::Command,
+    timeout_secs: u64,
+    cancel: Option<&AtomicBool>,
+    on_output_line: F,
+) -> Result<std::process::Output, String>
+where
+    F: FnMut(&str, &str),
+{
+    if let Some(cancel) = cancel {
+        run_command_with_timeout_cancel_and_output(cmd, timeout_secs, cancel, on_output_line)
+    } else {
+        run_command_with_timeout(cmd, timeout_secs)
+    }
 }
 
 fn run_with_optional_cancel(
