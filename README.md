@@ -168,16 +168,41 @@ VOrchestra can inspect and guide these environments, but it does not mutate nati
 - Rust 1.85+
 - Python 3.x
 
-### Recommended Runtime Tools
+### Runtime Requirements
 
-- `uv` for fast environment creation and package operations.
-- `pipdeptree` for dependency tree support in `pip` environments.
-- `pip-audit` for security scans.
-- Docker for Docker build/run actions.
-- Git for pre-commit setup.
-- VS Code CLI (`code`) for editor integration.
-- Jupyter and `ipykernel` for kernel registration.
-- Conda or Pixi if you want read-only native-manager inventory.
+Baseline:
+
+- Linux, Windows, or macOS desktop environment.
+- Python 3.x for environment creation, package inspection, diagnostics, and automation.
+- `pip` is strongly recommended because many environments and helper installs rely on it.
+
+Recommended tools by workflow:
+
+- `uv`: fast environment creation, uv-targeted package operations, `uv sync`, `uv lock`, `uv add`, `uv remove`, and `uv run`.
+- `pipdeptree`: dependency tree and graph support for `pip` environments.
+- `pip-audit`: security vulnerability scans.
+- Docker: generated Docker files and build/run terminal workflows.
+- Git: pre-commit setup and repository-aware project operations.
+- VS Code CLI (`code`): editor integration and interpreter doctor workflows.
+- Jupyter plus `ipykernel`: notebook kernel registration.
+- Conda or Pixi: read-only native-manager inventory.
+
+Install common Python helper tools:
+
+```bash
+python -m pip install --upgrade pip
+python -m pip install pipdeptree pip-audit ipykernel pre-commit
+```
+
+Install `uv` on Unix-like systems:
+
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+Full runtime and platform guidance is available in the documentation:
+
+https://ti-com-cafe.github.io/vorchestra/docs/start/requirements
 
 ### Linux System Packages
 
