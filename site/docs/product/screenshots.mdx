@@ -1,0 +1,137 @@
+import React, {useEffect, useState} from 'react';
+
+# Screenshots
+
+These screenshots show the current `0.1.0` pre-release interface. Click any screenshot to maximize it. Press `Esc` or click the backdrop to close.
+
+export const screenshots = [
+  {
+    src: '/vorchestra/img/screenshots/vorchestra-1.png',
+    alt: 'Workspace inventory with discovered environments',
+    caption: 'Workspace inventory with discovered environments, workspace controls, search and environment cards.',
+  },
+  {
+    src: '/vorchestra/img/screenshots/vorchestra-2.png',
+    alt: 'Studio package overview',
+    caption: 'Studio package overview with health summary, environment brief, package count and library manifest header.',
+  },
+  {
+    src: '/vorchestra/img/screenshots/vorchestra-3.png',
+    alt: 'Library manifest package list',
+    caption: 'Library manifest with installed package list, package actions, search, sorting and filtering controls.',
+  },
+  {
+    src: '/vorchestra/img/screenshots/vorchestra-4.png',
+    alt: 'Automation tools and script editor',
+    caption: 'Automation tab with quick tool runners and saved script editor for environment-specific tasks.',
+  },
+  {
+    src: '/vorchestra/img/screenshots/vorchestra-5.png',
+    alt: 'Configuration and .env editor',
+    caption: 'Configuration tab with structured `.env` editing and read-only `pyvenv.cfg` inspection.',
+  },
+  {
+    src: '/vorchestra/img/screenshots/vorchestra-6.png',
+    alt: 'Diagnostics dashboard',
+    caption: 'Diagnostics dashboard with manual checks, package manager status, consistency check and outdated packages.',
+  },
+  {
+    src: '/vorchestra/img/screenshots/vorchestra-7.png',
+    alt: 'Security and package metadata audit',
+    caption: 'Security view with `pip-audit` guidance plus package metadata audit, license and risk signals.',
+  },
+  {
+    src: '/vorchestra/img/screenshots/vorchestra-8.png',
+    alt: 'Diagnostic findings and advisory details',
+    caption: 'Diagnostic findings with package risk details, outdated status and actionable environment recommendations.',
+  },
+  {
+    src: '/vorchestra/img/screenshots/vorchestra-9.png',
+    alt: 'Lockfile management',
+    caption: 'Lock tab for freezing dependencies, restoring lock state and importing lock or requirements files.',
+  },
+  {
+    src: '/vorchestra/img/screenshots/vorchestra-10.png',
+    alt: 'Repair overview and VS Code interpreter doctor',
+    caption: 'Repair overview with health score, VS Code Interpreter Doctor, rebuild source preview and next repair action.',
+  },
+  {
+    src: '/vorchestra/img/screenshots/vorchestra-11.png',
+    alt: 'Repair Wizard action cards',
+    caption: 'Repair Wizard with recommended action cards for broken, stale, missing-tool and drift scenarios.',
+  },
+  {
+    src: '/vorchestra/img/screenshots/vorchestra-12.png',
+    alt: 'Deploy and integration cards',
+    caption: 'Deploy tab with VS Code config, Jupyter kernel, pre-commit hooks and Docker run integrations.',
+  },
+  {
+    src: '/vorchestra/img/screenshots/vorchestra-13.png',
+    alt: 'Docker deployment manifest preview',
+    caption: 'Docker deployment workflow with generated manifest files and preview before saving or running.',
+  },
+];
+
+export function ScreenshotGallery() {
+  const [active, setActive] = useState(null);
+
+  useEffect(() => {
+    if (!active) return;
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') setActive(null);
+    };
+    document.addEventListener('keydown', onKeyDown);
+    document.body.classList.add('lightboxOpen');
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+      document.body.classList.remove('lightboxOpen');
+    };
+  }, [active]);
+
+  return (
+    <>
+      <div className="screenshotGallery">
+        {screenshots.map((shot, index) => (
+          <figure key={shot.src}>
+            <button
+              type="button"
+              className="screenshotButton"
+              onClick={() => setActive({...shot, index})}
+              aria-label={`Maximize screenshot ${index + 1}: ${shot.alt}`}
+            >
+              <img src={shot.src} alt={shot.alt} loading="lazy" />
+              <span className="screenshotZoomHint">Click to maximize</span>
+            </button>
+            <figcaption>{shot.caption}</figcaption>
+          </figure>
+        ))}
+      </div>
+
+      {active && (
+        <div
+          className="screenshotLightbox"
+          role="dialog"
+          aria-modal="true"
+          aria-label={active.alt}
+          onClick={() => setActive(null)}
+        >
+          <div className="screenshotLightboxPanel" onClick={(event) => event.stopPropagation()}>
+            <div className="screenshotLightboxHeader">
+              <div>
+                <span>Screenshot {active.index + 1} of {screenshots.length}</span>
+                <strong>{active.alt}</strong>
+              </div>
+              <button type="button" onClick={() => setActive(null)} aria-label="Close maximized screenshot">
+                Close
+              </button>
+            </div>
+            <img src={active.src} alt={active.alt} />
+            <p>{active.caption}</p>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+<ScreenshotGallery />

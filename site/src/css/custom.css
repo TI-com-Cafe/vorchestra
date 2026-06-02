@@ -435,6 +435,51 @@ body {
   width: 100%;
 }
 
+.screenshotButton {
+  background: transparent;
+  border: 0;
+  color: inherit;
+  cursor: zoom-in;
+  display: block;
+  padding: 0;
+  position: relative;
+  text-align: left;
+  width: 100%;
+}
+
+.screenshotButton:hover img {
+  filter: saturate(1.08) contrast(1.03);
+  transform: scale(1.015);
+}
+
+.screenshotButton img {
+  transition: filter 180ms ease, transform 180ms ease;
+}
+
+.screenshotZoomHint {
+  background: rgba(18, 18, 18, 0.82);
+  border: 1px solid rgba(248, 248, 242, 0.18);
+  border-radius: 999px;
+  bottom: 0.85rem;
+  color: #f8f8f2;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.11em;
+  opacity: 0;
+  padding: 0.35rem 0.65rem;
+  position: absolute;
+  right: 0.85rem;
+  text-transform: uppercase;
+  transform: translateY(0.35rem);
+  transition: opacity 180ms ease, transform 180ms ease;
+}
+
+.screenshotButton:hover .screenshotZoomHint,
+.screenshotButton:focus-visible .screenshotZoomHint {
+  opacity: 1;
+  transform: translateY(0);
+}
+
 .screenshotCard span,
 .screenshotGallery figcaption {
   display: block;
@@ -455,6 +500,82 @@ body {
   color: var(--vo-muted);
   font-size: 0.92rem;
   font-weight: 800;
+}
+
+.lightboxOpen {
+  overflow: hidden;
+}
+
+.screenshotLightbox {
+  align-items: center;
+  background: rgba(0, 0, 0, 0.86);
+  backdrop-filter: blur(16px);
+  display: flex;
+  inset: 0;
+  justify-content: center;
+  padding: clamp(0.75rem, 2vw, 2rem);
+  position: fixed;
+  z-index: 9999;
+}
+
+.screenshotLightboxPanel {
+  background: #111;
+  border: 1px solid rgba(248, 248, 242, 0.16);
+  border-radius: 1rem;
+  box-shadow: 0 40px 120px rgba(0, 0, 0, 0.55);
+  color: #f8f8f2;
+  max-height: 94vh;
+  max-width: min(96vw, 96rem);
+  overflow: auto;
+  width: 100%;
+}
+
+.screenshotLightboxHeader {
+  align-items: center;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+  padding: 0.9rem 1rem;
+}
+
+.screenshotLightboxHeader span {
+  color: #a6e22e;
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.screenshotLightboxHeader strong {
+  display: block;
+  font-size: 1rem;
+}
+
+.screenshotLightboxHeader button {
+  background: #66d9ef;
+  border: 0;
+  border-radius: 999px;
+  color: #101010;
+  cursor: pointer;
+  font-weight: 900;
+  padding: 0.55rem 0.9rem;
+}
+
+.screenshotLightboxPanel > img {
+  display: block;
+  height: auto;
+  max-height: 76vh;
+  object-fit: contain;
+  width: 100%;
+}
+
+.screenshotLightboxPanel > p {
+  color: #d7d7c8;
+  font-weight: 700;
+  line-height: 1.6;
+  margin: 0;
+  padding: 0.9rem 1rem 1.1rem;
 }
 
 @media (max-width: 996px) {
