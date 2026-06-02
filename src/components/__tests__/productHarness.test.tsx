@@ -1943,7 +1943,7 @@ describe("product harness coverage", () => {
     expect(await screen.findByText(/pytest: 3 passed, 1 skipped/i)).toBeInTheDocument();
   });
 
-  it("does not offer quick-tool installs for read-only native managers", async () => {
+  it("offers Pixi quick-tool installs through native package support", async () => {
     invokeMock.mockImplementation(async (command: string) => {
       if (command === "start_run_in_venv_job") return "job-pytest";
       return null;
@@ -1969,9 +1969,12 @@ describe("product harness coverage", () => {
     expect(pytestCard).not.toBeNull();
     await userEvent.click(within(pytestCard!).getByRole("button", { name: /^run$/i }));
 
-    expect(await within(pytestCard!).findByText(/Install it with Pixi's native tooling/i)).toBeInTheDocument();
-    expect(within(pytestCard!).queryByRole("button", { name: /^install$/i })).not.toBeInTheDocument();
-    expect(packageInstallMock).not.toHaveBeenCalled();
+    expect(await within(pytestCard!).findByRole("button", { name: /^install$/i })).toBeInTheDocument();
+    await userEvent.click(within(pytestCard!).getByRole("button", { name: /^install$/i }));
+    expect(packageInstallMock).toHaveBeenCalledWith(
+      expect.objectContaining({ manager_type: "pixi" }),
+      "pytest"
+    );
   });
 
   it("summarizes linter and type-check quick tool results", async () => {

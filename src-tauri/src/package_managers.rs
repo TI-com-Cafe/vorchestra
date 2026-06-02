@@ -22,6 +22,7 @@ pub struct PackageCommand {
     pub program: String,
     pub args: Vec<String>,
     pub env: Vec<(String, String)>,
+    pub cwd: Option<String>,
 }
 
 impl PackageCommand {
@@ -30,6 +31,7 @@ impl PackageCommand {
             program: program.into(),
             args,
             env: Vec::new(),
+            cwd: None,
         }
     }
 
@@ -38,9 +40,17 @@ impl PackageCommand {
         self
     }
 
+    fn with_cwd(mut self, cwd: impl Into<String>) -> Self {
+        self.cwd = Some(cwd.into());
+        self
+    }
+
     pub fn to_command(&self) -> Command {
         let mut cmd = crate::helpers::new_command(&self.program);
         cmd.args(&self.args);
+        if let Some(cwd) = &self.cwd {
+            cmd.current_dir(cwd);
+        }
         for (key, value) in &self.env {
             cmd.env(key, value);
         }
@@ -67,6 +77,7 @@ pub trait PackageManager {
 
 pub struct PipManager;
 pub struct UvManager;
+pub struct PixiManager;
 
 impl PackageManager for PipManager {
     fn install_command(&self, venv: &Path, package: &str, opts: &InstallOptions) -> PackageCommand {
@@ -334,10 +345,126 @@ impl PackageManager for UvManager {
     }
 }
 
+impl PackageManager for PixiManager {
+    fn install_command(
+        &self,
+        venv: &Path,
+        package: &str,
+        _opts: &InstallOptions,
+    ) -> PackageCommand {
+        pixi_project_command(venv, vec!["add".into(), "--pypi".into(), package.into()])
+    }
+
+    fn uninstall_command(&self, venv: &Path, package: &str) -> PackageCommand {
+        pixi_project_command(venv, vec!["remove".into(), "--pypi".into(), package.into()])
+    }
+
+    fn update_command(&self, venv: &Path, package: &str) -> PackageCommand {
+        pixi_project_command(venv, vec!["update".into(), package.into()])
+    }
+
+    fn check_command(&self, venv: &Path) -> PackageCommand {
+        pixi_project_command(
+            venv,
+            vec![
+                "run".into(),
+                "python".into(),
+                "-m".into(),
+                "pip".into(),
+                "check".into(),
+            ],
+        )
+    }
+
+    fn outdated_command(&self, venv: &Path) -> PackageCommand {
+        pixi_project_command(venv, vec!["outdated".into(), "--json".into()])
+    }
+
+    fn freeze_command(&self, venv: &Path) -> PackageCommand {
+        pixi_project_command(
+            venv,
+            vec![
+                "run".into(),
+                "python".into(),
+                "-m".into(),
+                "pip".into(),
+                "freeze".into(),
+            ],
+        )
+    }
+
+    fn install_requirements_command(
+        &self,
+        venv: &Path,
+        requirements_path: &Path,
+    ) -> PackageCommand {
+        pixi_project_command(
+            venv,
+            vec![
+                "run".into(),
+                "python".into(),
+                "-m".into(),
+                "pip".into(),
+                "install".into(),
+                "-r".into(),
+                path_string(requirements_path.to_path_buf()),
+            ],
+        )
+    }
+
+    fn install_preview_command(&self, venv: &Path, package: &str) -> PackageCommand {
+        pixi_project_command(
+            venv,
+            vec![
+                "run".into(),
+                "python".into(),
+                "-m".into(),
+                "pip".into(),
+                "install".into(),
+                "--dry-run".into(),
+                package.into(),
+            ],
+        )
+    }
+
+    fn upgrade_preview_command(&self, venv: &Path, package: &str) -> PackageCommand {
+        pixi_project_command(
+            venv,
+            vec![
+                "run".into(),
+                "python".into(),
+                "-m".into(),
+                "pip".into(),
+                "install".into(),
+                "--upgrade".into(),
+                "--dry-run".into(),
+                package.into(),
+            ],
+        )
+    }
+
+    fn install_success_message(&self, package: &str) -> String {
+        format!("pixi added PyPI dependency {}", package)
+    }
+
+    fn uninstall_success_message(&self, package: &str) -> String {
+        format!("pixi removed PyPI dependency {}", package)
+    }
+
+    fn update_success_message(&self, package: &str) -> String {
+        format!("pixi updated {}", package)
+    }
+
+    fn freeze_failure_prefix(&self) -> &'static str {
+        "pixi freeze failed"
+    }
+}
+
 pub fn manager_for_engine(engine: &str) -> Result<Box<dyn PackageManager>, String> {
     match engine {
         "pip" => Ok(Box::new(PipManager)),
         "uv" => Ok(Box::new(UvManager)),
+        "pixi" => Ok(Box::new(PixiManager)),
         other => Err(format!(
             "{} environments are read-only in VOrchestra. Use the native manager for package changes.",
             other
@@ -371,6 +498,18 @@ fn append_install_options(args: &mut Vec<String>, opts: &InstallOptions) {
 fn uv_command(venv: &Path, args: Vec<String>) -> PackageCommand {
     PackageCommand::new(get_manager_path("uv"), args)
         .with_env("UV_CACHE_DIR", uv_cache_dir_for(venv))
+}
+
+fn pixi_project_command(venv: &Path, args: Vec<String>) -> PackageCommand {
+    PackageCommand::new(get_manager_path("pixi"), args)
+        .with_cwd(path_string(pixi_project_root(venv)))
+}
+
+fn pixi_project_root(venv: &Path) -> PathBuf {
+    venv.ancestors()
+        .find(|candidate| candidate.join("pixi.toml").exists())
+        .unwrap_or_else(|| venv.parent().unwrap_or(venv))
+        .to_path_buf()
 }
 
 fn path_string(path: PathBuf) -> String {
@@ -517,6 +656,26 @@ mod tests {
         assert!(upgrade.args.contains(&"--dry-run".to_string()));
         assert!(upgrade.env.iter().any(|(k, _)| k == "UV_CACHE_DIR"));
         let _ = fs::remove_dir_all(venv);
+    }
+
+    #[test]
+    fn pixi_commands_run_at_project_root_with_pypi_flag() {
+        let root = std::env::temp_dir().join("vorchestra-pixi-command-test");
+        let venv = root.join(".pixi").join("envs").join("default");
+        fs::create_dir_all(&venv).unwrap();
+        fs::write(root.join("pixi.toml"), "[project]\nname = \"demo\"\n").unwrap();
+
+        let install = PixiManager.install_command(&venv, "httpx", &InstallOptions::default());
+        let remove = PixiManager.uninstall_command(&venv, "httpx");
+
+        assert_eq!(install.args, vec!["add", "--pypi", "httpx"]);
+        assert_eq!(remove.args, vec!["remove", "--pypi", "httpx"]);
+        assert_eq!(
+            install.cwd.as_deref(),
+            Some(root.to_string_lossy().as_ref())
+        );
+
+        let _ = fs::remove_dir_all(root);
     }
 
     #[test]

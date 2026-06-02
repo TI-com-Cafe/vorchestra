@@ -32,7 +32,7 @@ export const StudioDeploy: React.FC<StudioDeployProps> = ({ venv, setMessage }) 
   const vscodeJobRef = useRef<string | null>(null);
   const jupyterJobRef = useRef<string | null>(null);
   const precommitJobRef = useRef<string | null>(null);
-  const readOnlyManager = isReadOnlyManager(venv.manager_type);
+  const readOnlyManager = isReadOnlyManager(venv.manager_type) || venv.manager_type === "pixi";
   const readOnlyManagerName = readOnlyManagerLabel(venv.manager_type);
   const ipykernelInstallHint = getIpykernelInstallHint(venv);
 

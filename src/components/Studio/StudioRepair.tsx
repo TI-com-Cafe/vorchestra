@@ -126,7 +126,7 @@ export const StudioRepair: React.FC<StudioRepairProps> = ({ venv, setStudioTab, 
     setLoadingSnapshots(true);
     try {
       const list = await invoke<ProjectSnapshotInfo[]>("list_project_snapshots", { venvPath: venv.path });
-      setSnapshots(list);
+      setSnapshots(Array.isArray(list) ? list : []);
     } catch (err) {
       setMessage(`Could not list snapshots: ${err}`);
     } finally {
