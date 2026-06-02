@@ -392,6 +392,38 @@ mod tests {
     }
 
     #[test]
+    fn pip_install_requirements_command_uses_python_module() {
+        let venv = fake_venv();
+        let req = venv.parent().unwrap_or(&venv).join("requirements.lock");
+        let command = PipManager.install_requirements_command(&venv, &req);
+
+        assert!(command.program.ends_with(expected_python_suffix()));
+        assert_eq!(command.args[0], "-m");
+        assert_eq!(command.args[1], "pip");
+        assert_eq!(command.args[2], "install");
+        assert_eq!(command.args[3], "-r");
+        assert_eq!(command.args[4], req.to_string_lossy());
+        assert!(command.env.is_empty());
+        let _ = fs::remove_dir_all(venv);
+    }
+
+    #[test]
+    fn uv_install_requirements_command_targets_python() {
+        let venv = fake_venv();
+        let req = venv.parent().unwrap_or(&venv).join("requirements.lock");
+        let command = UvManager.install_requirements_command(&venv, &req);
+
+        assert_eq!(command.args[0], "pip");
+        assert_eq!(command.args[1], "install");
+        assert_eq!(command.args[2], "--python");
+        assert!(command.args[3].ends_with(expected_python_suffix()));
+        assert_eq!(command.args[4], "-r");
+        assert_eq!(command.args[5], req.to_string_lossy());
+        assert!(command.env.iter().any(|(k, _)| k == "UV_CACHE_DIR"));
+        let _ = fs::remove_dir_all(venv);
+    }
+
+    #[test]
     fn read_only_managers_are_rejected() {
         match manager_for_engine("conda") {
             Ok(_) => panic!("conda should be read-only"),

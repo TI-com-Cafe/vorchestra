@@ -9,6 +9,7 @@ use crate::helpers::{
 use crate::jobs::{
     create_background_job, set_job_progress, set_job_status, AppState, BackgroundJobHandle,
 };
+use crate::package_managers::manager_for_engine;
 use crate::project_manifest::{
     merge_packages, read_pipfile, read_pyproject, read_requirements_txt, read_setup_cfg,
     read_setup_py,
@@ -557,22 +558,10 @@ fn install_requirements_file_for_rebuild(
     cancel: &AtomicBool,
 ) -> Result<(), String> {
     let venv = PathBuf::from(venv_path);
-    let req = requirements_path.to_string_lossy().to_string();
-    let mut cmd = if engine == "uv" {
-        let uv_path = get_manager_path("uv");
-        let python = get_python_path(&venv);
-        let mut c = new_command(uv_path);
-        c.env("UV_CACHE_DIR", uv_cache_dir_for(&venv));
-        c.args(["pip", "install", "--python"])
-            .arg(python)
-            .args(["-r", &req]);
-        c
-    } else {
-        let python = get_python_path(&venv);
-        let mut c = new_command(python);
-        c.args(["-m", "pip", "install", "-r", &req]);
-        c
-    };
+    let manager = manager_for_engine(engine)?;
+    let mut cmd = manager
+        .install_requirements_command(&venv, requirements_path)
+        .to_command();
 
     let out = run_command_with_timeout_and_cancel(&mut cmd, 900, cancel)?;
     if out.status.success() {
@@ -887,22 +876,12 @@ fn clone_venv_job(
             .map_err(|e| format!("Failed to stage clone requirements: {}", e))?;
 
         set_job_progress(job, "Installing packages into clone...", Some(0.65));
-        let install_result = if engine == "uv" {
-            let uv_path = get_manager_path("uv");
-            let new_python = get_python_path(&dest);
-            let mut cmd = new_command(uv_path);
-            cmd.env("UV_CACHE_DIR", uv_cache_dir_for(&dest));
-            cmd.args(["pip", "install", "--python"])
-                .arg(&new_python)
-                .arg("-r")
-                .arg(&tmp);
-            run_command_with_timeout_and_cancel(&mut cmd, 600, job.cancel.as_ref())
-        } else {
-            let python = get_python_path(&dest);
-            let mut cmd = new_command(python);
-            cmd.args(["-m", "pip", "install", "-r"]).arg(&tmp);
-            run_command_with_timeout_and_cancel(&mut cmd, 600, job.cancel.as_ref())
-        };
+        let manager = manager_for_engine(&engine)?;
+        let mut cmd = manager
+            .install_requirements_command(&dest, &tmp)
+            .to_command();
+        let install_result =
+            run_command_with_timeout_and_cancel(&mut cmd, 600, job.cancel.as_ref());
 
         let _ = fs::remove_file(&tmp);
 
