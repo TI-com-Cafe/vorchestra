@@ -101,7 +101,7 @@ class DatabaseService {
   }
 
   async removeWorkspace(path: string) {
-    await this.runWrite(async (db) => {
+    await this.runWrite((db) => this.transaction(db, async () => {
       await db.execute("PRAGMA busy_timeout = 30000");
       await db.execute(
         "DELETE FROM scripts WHERE venv_path IN (SELECT path FROM venvs WHERE workspace_path = ?)",
@@ -109,7 +109,7 @@ class DatabaseService {
       );
       await db.execute("DELETE FROM venvs WHERE workspace_path = ?", [path]);
       await db.execute("DELETE FROM workspaces WHERE path = ?", [path]);
-    });
+    }));
   }
 
   async removeVenvByPath(path: string) {
@@ -137,8 +137,15 @@ class DatabaseService {
     return cache;
   }
 
-  async saveVenvCache(workspacePath: string, venvs: VenvInfo[]) {
-    await this.runWrite((db) => this.transaction(db, async () => {
+  async saveVenvCache(workspacePath: string, venvs: VenvInfo[]): Promise<boolean> {
+    return await this.runWrite((db) => this.transaction(db, async () => {
+      const workspaceRows: any[] = await db.select(
+        "SELECT path FROM workspaces WHERE path = ?",
+        [workspacePath]
+      );
+      if (workspaceRows.length === 0) {
+        return false;
+      }
       const existingRows: any[] = await db.select(
         "SELECT path, template_name FROM venvs WHERE workspace_path = ?",
         [workspacePath]
@@ -154,6 +161,7 @@ class DatabaseService {
           [workspacePath, v.name, v.path, v.version, v.status, v.issue || null, v.last_modified, v.manager_type, templateName]
         );
       }
+      return true;
     }));
   }
 

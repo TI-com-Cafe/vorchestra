@@ -54,7 +54,11 @@ export function useWorkspaceOperations({
           setMessage(`Discarded scan result for removed workspace ${workspacePath}.`);
           return;
         }
-        await dbService.saveVenvCache(workspacePath, res);
+        const saved = await dbService.saveVenvCache(workspacePath, res);
+        if (!saved) {
+          setMessage(`Discarded scan result for removed workspace ${workspacePath}.`);
+          return;
+        }
         setVenvCache((prev) => {
           const existingTemplateNames = new Map(
             (prev[workspacePath] ?? []).map((venv) => [venv.path, venv.template_name])
