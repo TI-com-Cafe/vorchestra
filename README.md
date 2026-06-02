@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="./assets/vorchestra-icon.svg" alt="VOrchestra logo" width="128"/>
+</p>
+
 # VOrchestra
 
 <p align="center"><em>Local-first orchestration for Python virtual environments.</em></p>
@@ -14,7 +18,7 @@ VOrchestra is a native desktop app for discovering, creating, inspecting, repair
 
 It is built for developers who manage many `.venv` folders and need one place to understand environment health, dependency drift, security posture, disk usage, project configuration, and daily automation.
 
-> Current release: `0.1.0` pre-release. Binaries are not published yet; build from source for now.
+> Current release: [`v0.1.0`](https://github.com/TI-com-Cafe/vorchestra/releases/tag/v0.1.0) pre-release. Native installers are available for Linux, Windows, and macOS.
 
 ## Product Positioning
 
@@ -28,9 +32,21 @@ It sits above them as a local control center:
 - Cleanup: reclaim cache and environment disk space intentionally.
 - Operations: run package, lockfile, Docker, VS Code, Jupyter, pre-commit, and script workflows from one app.
 
+## Download
+
+Download the latest pre-release from:
+
+https://github.com/TI-com-Cafe/vorchestra/releases/tag/v0.1.0
+
+Available packages:
+
+- Linux: `.AppImage`, `.deb`, `.rpm`
+- Windows: `.exe`, `.msi`
+- macOS: `.dmg` for Apple Silicon and Intel
+
 ## Screenshots
 
-Screenshots and GIFs will be added before the first binary release. Local screenshot capture notes live in [`assets/screenshots/README.md`](./assets/screenshots/README.md).
+Screenshots are available in the documentation site and local screenshot capture notes live in [`assets/screenshots/README.md`](./assets/screenshots/README.md).
 
 ## Core Features
 
@@ -137,7 +153,6 @@ VOrchestra can inspect and guide these environments, but it does not mutate nati
 
 ## What VOrchestra Does Not Do Yet
 
-- No published binary releases yet.
 - No Homebrew, winget, Flathub, or Snap distribution yet.
 - No remote SSH workspace inventory yet.
 - No full package mutation support for Conda/Pixi.

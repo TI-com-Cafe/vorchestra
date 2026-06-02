@@ -57,7 +57,7 @@ export default function Home() {
           <div>
             <p className="eyebrow">Local-first · Python environments · Repairable workflows</p>
             <div className="heroWordmark">
-              <img src="/vorchestra/img/vorchestra-mark.svg" alt="VOrchestra" />
+              <img src="/vorchestra/img/vorchestra-icon.svg" alt="VOrchestra" />
               <span>VOrchestra</span>
             </div>
             <h1 className="heroTitle">Orchestrate every Python environment on your machine.</h1>

@@ -4,7 +4,7 @@ const {themes: prismThemes} = require('prism-react-renderer');
 const config = {
   title: 'VOrchestra',
   tagline: 'Local-first orchestration for Python virtual environments.',
-  favicon: 'img/vorchestra-mark.svg',
+  favicon: 'img/vorchestra-icon.svg',
   url: 'https://marquesantero.github.io',
   baseUrl: '/vorchestra/',
   organizationName: 'marquesantero',
@@ -76,12 +76,12 @@ const config = {
   themeConfig:
     /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
     ({
-      image: 'img/vorchestra-mark.svg',
+      image: 'img/vorchestra-icon.svg',
       navbar: {
         title: 'VOrchestra',
         logo: {
           alt: 'VOrchestra',
-          src: 'img/vorchestra-mark.svg',
+          src: 'img/vorchestra-icon.svg',
         },
         items: [
           {to: '/docs/intro', label: 'Docs', position: 'left'},
