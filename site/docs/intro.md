@@ -24,8 +24,12 @@ https://github.com/TI-com-Cafe/vorchestra/releases/tag/v0.1.0
 
 ## Documentation map
 
-- [Quick start](./start/quickstart.md): build and run the app.
-- [Product overview](./product/overview.md): understand the main workflows.
-- [Architecture](./reference/architecture.md): frontend, backend, jobs, and commands.
+- [Installation](./start/installation.md): install the desktop app or choose the source build path.
+- [Quick start](./start/quickstart.md): add a workspace, scan, and open Studio.
+- [First run](./start/first-run.md): recommended first workspace and first useful actions.
+- [User workflows](./product/workflows.md): inventory, creation, repair, cleanup, package risk, and project setup.
+- [Product overview](./product/overview.md): understand the main product surfaces.
 - [Troubleshooting](./reference/troubleshooting.md): common failures and fixes.
+- [FAQ](./reference/faq.md): common product and behavior questions.
+- [Architecture](./reference/architecture.md): frontend, backend, jobs, and commands.
 - [Roadmap](./community/roadmap.md): planned release direction.

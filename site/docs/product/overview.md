@@ -16,3 +16,44 @@ VOrchestra is organized around local Python environment maintenance.
 ## Product principle
 
 VOrchestra should not compete with package managers on generic package management. Its advantage is transversal visibility across the machine and guided maintenance.
+
+## Main surfaces
+
+Workspace inventory:
+
+- Add local project roots.
+- Scan for environments.
+- Detect stale or broken entries.
+- Open Studio for a selected environment.
+
+Project Board:
+
+- Group environment state by project root.
+- Show manifests and lockfiles.
+- Suggest next actions based on project context.
+
+Studio:
+
+- Package catalog, package actions, tree, graph, and package risk.
+- Diagnostics, security audit, and metadata hygiene.
+- Health score and Repair Wizard.
+- Lockfile, drift, and rebuild workflows.
+- `.env`, automation scripts, VS Code, Jupyter, Docker, and pre-commit integrations.
+
+Cleanup:
+
+- Large environment review.
+- Duplicate cache review.
+- Stale entry removal.
+- Package size triage.
+
+## Recommended reading
+
+If you are new to the app, read these pages in order:
+
+1. [Installation](../start/installation.md)
+2. [Quick start](../start/quickstart.md)
+3. [User workflows](./workflows.md)
+4. [Package Studio](./package-studio.md)
+5. [Health and repair](./health-repair.md)
+6. [Troubleshooting](../reference/troubleshooting.md)

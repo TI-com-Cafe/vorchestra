@@ -1,28 +1,61 @@
 # Diagnostics and security
 
-Diagnostics and security checks are intentionally manual. They do not auto-run when opening the tab.
+Diagnostics and security checks are manual. They do not run automatically when opening the tab because they can call external tools, inspect many packages, or access advisory data.
 
 ## Diagnostics
 
-- Check Python and package manager consistency.
-- Detect missing tools.
-- Detect outdated packages.
-- Adapt commands for `pip` or `uv` depending on manager type.
-- Run heavy checks as cancellable background jobs.
+Diagnostics help answer whether the environment is internally consistent.
 
-## Security
+Checks include:
 
-- Run `pip-audit` when available.
-- Show install actions when `pip-audit` is missing.
-- Summarize vulnerabilities using PyPA advisories.
-- Export CycloneDX SBOM.
+- Package conflict check.
+- Outdated package listing.
+- Manager-specific command adaptation.
+- Missing pip or helper tool hints.
+- Native manager limitations.
 
-## Package hygiene
+Diagnostics run as cancellable background jobs and stream logs when external commands produce output.
 
-Metadata hygiene checks include:
+## Security audit
+
+Security audit uses `pip-audit` when available.
+
+The audit can show:
+
+- Vulnerable packages.
+- Advisory identifiers.
+- Installed versions.
+- Fixed versions when advisory data provides them.
+- Raw tool guidance when parsing fails.
+
+If `pip-audit` is missing, VOrchestra shows an install command adapted to the selected manager.
+
+For uv environments, VOrchestra may use uv tool execution or uv-targeted install guidance depending on the context.
+
+## SBOM export
+
+VOrchestra can export a CycloneDX SBOM for package inventory use cases. Use SBOM export when you need to share dependency composition for audit or support.
+
+## Package metadata hygiene
+
+Metadata hygiene checks look beyond known vulnerabilities.
+
+Signals include:
 
 - License summary.
-- Missing license queue.
+- Missing or unclear license metadata.
 - Deprecated or inactive package hints.
-- Suspicious package names and typosquatting hints.
-- Searchable/filterable review queue.
+- Suspicious package names.
+- Typosquatting-style hints.
+- Root package versus dependency package ownership.
+
+These signals are not automatic proof of a security issue. Treat them as review prompts.
+
+## Recommended workflow
+
+1. Run diagnostics.
+2. Fix missing pip or missing helper tools first.
+3. Run security audit.
+4. Run metadata hygiene.
+5. Export SBOM if you need an artifact.
+6. Use Repair Wizard for guided fixes.

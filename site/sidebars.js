@@ -5,18 +5,20 @@ const sidebars = {
     {
       type: 'category',
       label: 'Start',
-      items: ['start/quickstart', 'start/requirements', 'start/build-from-source'],
+      items: ['start/installation', 'start/quickstart', 'start/first-run', 'start/requirements', 'start/build-from-source'],
     },
     {
       type: 'category',
       label: 'Product',
       items: [
         'product/overview',
+        'product/workflows',
         'product/screenshots',
         'product/workspaces',
         'product/environment-creation',
         'product/project-board',
         'product/package-studio',
+        'product/package-sources',
         'product/health-repair',
         'product/diagnostics-security',
         'product/disk-cleanup',
@@ -27,7 +29,7 @@ const sidebars = {
     {
       type: 'category',
       label: 'Reference',
-      items: ['reference/architecture', 'reference/c4-model', 'reference/commands', 'reference/background-jobs', 'reference/troubleshooting'],
+      items: ['reference/architecture', 'reference/c4-model', 'reference/commands', 'reference/background-jobs', 'reference/troubleshooting', 'reference/faq'],
     },
     {
       type: 'category',
