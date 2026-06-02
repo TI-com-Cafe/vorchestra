@@ -51,6 +51,30 @@ cd src-tauri && CARGO_TARGET_DIR=/tmp/vorchestra-ci-target cargo test diagnostic
 
 Use `npm run check` and `cargo test --all-targets` before release, before cross-cutting refactors, or when command registration/migrations changed.
 
+## Pull Request Process
+
+`main` is protected and should be treated as release-bound.
+
+Contributor workflow:
+
+1. Branch from the latest `main`.
+2. Make one coherent product, bug, test, or documentation change.
+3. Use targeted validation during development.
+4. Run broader checks before opening the PR when the change crosses frontend/backend boundaries.
+5. Open a PR against `main` with scope, risk, and validation notes.
+6. Keep the branch updated when GitHub reports it is behind `main`.
+7. Resolve all review conversations before merge.
+
+Required merge gates:
+
+- One approving review.
+- Passing CI for Rust fmt, frontend TypeScript/build, Rust check/clippy/test on Linux/macOS/Windows, and Rust security audit.
+- Up-to-date branch before merge.
+- Linear history.
+- No force-push or deletion on `main`.
+
+Dependency-update PRs should be reviewed conservatively. Do not merge Dependabot updates that can affect Tauri, GitHub Actions, Node, Rust, or packaging without checking the full CI matrix and release impact.
+
 ## Backend Test Seams
 
 - `src-tauri/src/package_managers.rs` centralizes package-manager command construction.
