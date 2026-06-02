@@ -75,6 +75,16 @@ pub fn create_background_job(
     Ok((job_id, handle))
 }
 
+#[cfg(test)]
+pub fn test_job_handle() -> BackgroundJobHandle {
+    BackgroundJobHandle {
+        id: "test-job".to_string(),
+        cancel: Arc::new(AtomicBool::new(false)),
+        snapshot: Arc::new(Mutex::new(JobSnapshot::running())),
+        app: None,
+    }
+}
+
 pub fn set_job_status(
     handle: &BackgroundJobHandle,
     status: &str,

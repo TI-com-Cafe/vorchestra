@@ -4,6 +4,7 @@
 //! plugs in Tauri plugins / state / migrations, and registers the
 //! command handlers. All implementation lives in the submodules.
 
+pub mod command_runner;
 pub mod commands;
 pub mod dependency_tree;
 pub mod helpers;

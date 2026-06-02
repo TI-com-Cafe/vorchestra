@@ -1,6 +1,7 @@
 //! Package analysis helpers used by package commands: upgrade previews,
 //! reverse dependency lookup, and dry-run conflict checks.
 
+use crate::command_runner::{CommandRunner, RealCommandRunner};
 use crate::helpers::{
     ensure_venv_dir, get_python_path, new_command, run_command_with_timeout_and_cancel,
     stdout_or_stderr,
@@ -17,6 +18,16 @@ pub(crate) fn preview_upgrade_job(
     engine: String,
     job: &BackgroundJobHandle,
 ) -> Result<String, String> {
+    preview_upgrade_with_runner(venv_path, package, engine, job, &RealCommandRunner)
+}
+
+fn preview_upgrade_with_runner(
+    venv_path: String,
+    package: String,
+    engine: String,
+    job: &BackgroundJobHandle,
+    runner: &dyn CommandRunner,
+) -> Result<String, String> {
     set_job_progress(
         job,
         format!("Previewing upgrade for {}...", package),
@@ -24,16 +35,10 @@ pub(crate) fn preview_upgrade_job(
     );
     let venv = ensure_venv_dir(&venv_path)?;
     let manager = manager_for_engine(&engine)?;
-    let mut cmd = manager
-        .upgrade_preview_command(&venv, &package)
-        .to_command();
-    let out = run_command_with_timeout_and_cancel(&mut cmd, 120, job.cancel.as_ref())?;
+    let cmd = manager.upgrade_preview_command(&venv, &package);
+    let out = runner.run_package_command(&cmd, 120, Some(job.cancel.as_ref()))?;
     set_job_progress(job, "Upgrade preview finished.", Some(0.95));
-    Ok(format!(
-        "{}{}",
-        String::from_utf8_lossy(&out.stderr),
-        String::from_utf8_lossy(&out.stdout)
-    ))
+    Ok(out.combined_text())
 }
 
 /// Returns the list of installed distributions that declare a runtime
@@ -95,6 +100,16 @@ pub(crate) fn check_install_conflicts_job(
     engine: String,
     job: &BackgroundJobHandle,
 ) -> Result<String, String> {
+    check_install_conflicts_with_runner(venv_path, package, engine, job, &RealCommandRunner)
+}
+
+fn check_install_conflicts_with_runner(
+    venv_path: String,
+    package: String,
+    engine: String,
+    job: &BackgroundJobHandle,
+    runner: &dyn CommandRunner,
+) -> Result<String, String> {
     set_job_progress(
         job,
         format!("Running dry-run install for {}...", package),
@@ -102,10 +117,92 @@ pub(crate) fn check_install_conflicts_job(
     );
     let pb = ensure_venv_dir(&venv_path)?;
     let manager = manager_for_engine(&engine)?;
-    let mut cmd = manager.install_preview_command(&pb, &package).to_command();
+    let cmd = manager.install_preview_command(&pb, &package);
 
-    let out = run_command_with_timeout_and_cancel(&mut cmd, 120, job.cancel.as_ref())?;
+    let out = runner.run_package_command(&cmd, 120, Some(job.cancel.as_ref()))?;
     set_job_progress(job, "Conflict check finished.", Some(0.95));
-    Ok(String::from_utf8_lossy(&out.stderr).to_string()
-        + String::from_utf8_lossy(&out.stdout).as_ref())
+    Ok(out.combined_text())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::command_runner::tests_support::FakeCommandRunner;
+    use crate::command_runner::CommandOutput;
+    use std::fs;
+    use std::path::PathBuf;
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    fn fake_venv() -> PathBuf {
+        let suffix = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let root = std::env::temp_dir().join(format!("vorchestra-analysis-runner-{}", suffix));
+        if cfg!(windows) {
+            fs::create_dir_all(root.join("Scripts")).unwrap();
+        } else {
+            fs::create_dir_all(root.join("bin")).unwrap();
+        }
+        fs::write(root.join("pyvenv.cfg"), "home = /usr/bin\n").unwrap();
+        root
+    }
+
+    #[test]
+    fn preview_upgrade_uses_runner_and_combines_output() {
+        let venv = fake_venv();
+        let job = crate::jobs::test_job_handle();
+        let runner = FakeCommandRunner::new(vec![Ok(CommandOutput {
+            success: true,
+            stdout: b"Would install httpx-1.0\n".to_vec(),
+            stderr: b"Using cached metadata\n".to_vec(),
+        })]);
+
+        let out = preview_upgrade_with_runner(
+            venv.to_string_lossy().to_string(),
+            "httpx".to_string(),
+            "pip".to_string(),
+            &job,
+            &runner,
+        )
+        .unwrap();
+
+        assert!(out.contains("Using cached metadata"));
+        assert!(out.contains("Would install httpx-1.0"));
+        let calls = runner.calls.borrow();
+        assert_eq!(calls.len(), 1);
+        assert_eq!(
+            calls[0].args,
+            vec!["-m", "pip", "install", "--upgrade", "--dry-run", "httpx"]
+        );
+        let _ = fs::remove_dir_all(venv);
+    }
+
+    #[test]
+    fn install_conflict_preview_uses_uv_dry_run_command() {
+        let venv = fake_venv();
+        let job = crate::jobs::test_job_handle();
+        let runner = FakeCommandRunner::new(vec![Ok(CommandOutput::success(
+            b"Resolved 3 packages\n".to_vec(),
+        ))]);
+
+        let out = check_install_conflicts_with_runner(
+            venv.to_string_lossy().to_string(),
+            "django".to_string(),
+            "uv".to_string(),
+            &job,
+            &runner,
+        )
+        .unwrap();
+
+        assert!(out.contains("Resolved 3 packages"));
+        let calls = runner.calls.borrow();
+        assert_eq!(calls.len(), 1);
+        assert_eq!(calls[0].args[0], "pip");
+        assert_eq!(calls[0].args[1], "install");
+        assert!(calls[0].args.contains(&"--python".to_string()));
+        assert!(calls[0].args.contains(&"--dry-run".to_string()));
+        assert!(calls[0].env.iter().any(|(key, _)| key == "UV_CACHE_DIR"));
+        let _ = fs::remove_dir_all(venv);
+    }
 }
