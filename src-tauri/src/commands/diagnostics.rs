@@ -5,10 +5,11 @@
 use crate::helpers::{
     detect_manager_type, ensure_venv_dir, get_manager_path, get_python_path, new_command,
     parse_outdated_packages_json, parse_security_audit_json_from_output, run_command_with_timeout,
-    run_command_with_timeout_and_cancel, stdout_or_stderr, uv_cache_dir_for,
+    run_command_with_timeout_cancel_and_output, stdout_or_stderr, uv_cache_dir_for,
 };
 use crate::jobs::{
-    cleanup_finished_jobs, create_background_job, set_job_status, snapshot_json, AppState,
+    append_job_log, cleanup_finished_jobs, create_background_job, set_job_status, snapshot_json,
+    AppState,
 };
 use crate::package_managers::{manager_for_engine, pip_audit_install_hint_for_engine};
 use crate::types::{DeprecatedPackage, LicenseBucket, PackageMetadataAudit, SuspiciousPackage};
@@ -42,10 +43,11 @@ pub fn start_diagnostics_job(
                     c.args(["-m", "pip", "check"]);
                     c
                 };
-                let health_out = run_command_with_timeout_and_cancel(
+                let health_out = run_command_with_timeout_cancel_and_output(
                     &mut check_cmd,
                     90,
                     blocking_job.cancel.as_ref(),
+                    |stream, line| append_job_log(&blocking_job, stream, line),
                 )?;
                 let health = if health_out.status.success() {
                     "No conflicts found.".to_string()
@@ -62,10 +64,11 @@ pub fn start_diagnostics_job(
                     c.args(["-m", "pip", "list", "--outdated", "--format=json"]);
                     c
                 };
-                let outdated_out = run_command_with_timeout_and_cancel(
+                let outdated_out = run_command_with_timeout_cancel_and_output(
                     &mut outdated_cmd,
                     120,
                     blocking_job.cancel.as_ref(),
+                    |stream, line| append_job_log(&blocking_job, stream, line),
                 )?;
                 if !outdated_out.status.success() {
                     let raw = stdout_or_stderr(&outdated_out);
@@ -111,10 +114,11 @@ pub fn start_security_audit_job(
 
                 let mut cmd = new_command(&python_path);
                 cmd.args(["-m", "pip_audit", "--format", "json"]);
-                let out = run_command_with_timeout_and_cancel(
+                let out = run_command_with_timeout_cancel_and_output(
                     &mut cmd,
                     180,
                     blocking_job.cancel.as_ref(),
+                    |stream, line| append_job_log(&blocking_job, stream, line),
                 )?;
 
                 if out.status.success() {
@@ -137,10 +141,11 @@ pub fn start_security_audit_job(
                                 "--python",
                                 &python_str,
                             ]);
-                            let uvx_out = run_command_with_timeout_and_cancel(
+                            let uvx_out = run_command_with_timeout_cancel_and_output(
                                 &mut uvx,
                                 240,
                                 blocking_job.cancel.as_ref(),
+                                |stream, line| append_job_log(&blocking_job, stream, line),
                             )?;
                             if uvx_out.status.success() || !uvx_out.stdout.is_empty() {
                                 parse_security_audit_json_from_output(&uvx_out)
@@ -335,10 +340,11 @@ print(json.dumps(rows))
 "#;
                 let mut cmd = new_command(python);
                 cmd.arg("-c").arg(script);
-                let out = run_command_with_timeout_and_cancel(
+                let out = run_command_with_timeout_cancel_and_output(
                     &mut cmd,
                     120,
                     blocking_job.cancel.as_ref(),
+                    |stream, line| append_job_log(&blocking_job, stream, line),
                 )?;
                 if !out.status.success() {
                     return Err(stdout_or_stderr(&out));

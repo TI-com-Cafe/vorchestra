@@ -4,9 +4,12 @@
 
 use crate::helpers::{
     classify_install_error, ensure_venv_dir, get_python_path, new_command,
-    run_command_with_timeout_and_cancel, stdout_or_stderr,
+    run_command_with_timeout_and_cancel, run_command_with_timeout_cancel_and_output,
+    stdout_or_stderr,
 };
-use crate::jobs::{create_background_job, set_job_progress, set_job_status, AppState};
+use crate::jobs::{
+    append_job_log, create_background_job, set_job_progress, set_job_status, AppState,
+};
 use std::fs;
 
 #[derive(serde::Serialize)]
@@ -360,12 +363,13 @@ fn install_precommit_hooks_job(
             "Installing pre-commit in the environment...",
             Some(0.25),
         );
-        crate::commands::packages::install_dependency_with_cancel_internal(
+        crate::commands::packages::install_dependency_with_cancel_and_output_internal(
             venv_path.clone(),
             "pre-commit".to_string(),
             engine,
             crate::commands::packages::InstallOptions::default(),
             Some(job.cancel.as_ref()),
+            |stream, line| append_job_log(job, stream, line),
         )
         .map_err(|e| classify_install_error(format!("Failed to install pre-commit: {}", e)))?;
     }
@@ -401,7 +405,12 @@ repos:
     let mut cmd = new_command(&pre_commit);
     cmd.current_dir(&project_root);
     cmd.args(["install"]);
-    let out = run_command_with_timeout_and_cancel(&mut cmd, 60, job.cancel.as_ref())?;
+    let out = run_command_with_timeout_cancel_and_output(
+        &mut cmd,
+        60,
+        job.cancel.as_ref(),
+        |stream, line| append_job_log(job, stream, line),
+    )?;
     if !out.status.success() {
         let err = String::from_utf8_lossy(&out.stderr).to_string();
         if err.to_lowercase().contains("not a git repository") {
