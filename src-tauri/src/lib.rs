@@ -13,6 +13,7 @@ pub mod package_analysis;
 pub mod package_catalog;
 pub mod package_hygiene;
 pub mod package_jobs;
+pub mod package_managers;
 pub mod package_ops;
 pub mod package_sizes;
 pub mod process_utils;

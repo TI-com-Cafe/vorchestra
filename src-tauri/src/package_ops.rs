@@ -3,18 +3,11 @@
 use std::sync::atomic::AtomicBool;
 
 use crate::helpers::{
-    classify_install_error, ensure_venv_dir, get_manager_path, get_python_path, new_command,
-    run_command_with_timeout, run_command_with_timeout_and_cancel, uv_cache_dir_for,
+    classify_install_error, ensure_venv_dir, new_command, run_command_with_timeout,
+    run_command_with_timeout_and_cancel,
 };
-
-/// Optional flags accepted by package install. Unknown / missing fields
-/// default safely (no extra args appended).
-#[derive(Default, Clone)]
-pub struct InstallOptions {
-    pub index_url: Option<String>,
-    pub extra_index_url: Option<String>,
-    pub editable: bool,
-}
+pub use crate::package_managers::InstallOptions;
+use crate::package_managers::{manager_for_engine, PackageCommand};
 
 pub fn install_dependency_internal(
     venv_path: String,
@@ -41,35 +34,13 @@ pub fn install_dependency_with_cancel_internal(
     cancel: Option<&AtomicBool>,
 ) -> Result<String, String> {
     let venv = ensure_venv_dir(&venv_path)?;
-    ensure_mutable_engine(&engine)?;
-
-    if engine == "uv" {
-        let uv_path = get_manager_path("uv");
-        let python_path = get_python_path(&venv);
-        let mut cmd = new_command(uv_path);
-        cmd.env("UV_CACHE_DIR", uv_cache_dir_for(&venv));
-        cmd.args(["pip", "install", "--python"]).arg(&python_path);
-        append_install_options(&mut cmd, &opts);
-        cmd.arg(&package);
-
-        let output = run_with_optional_cancel(&mut cmd, 600, cancel)?;
-        if output.status.success() {
-            return Ok(format!("uv installed {}", package));
-        }
-        return Err(classify_install_error(
-            String::from_utf8_lossy(&output.stderr).to_string(),
-        ));
-    }
-
-    let python = get_python_path(&venv);
-    let mut cmd = new_command(python);
-    cmd.args(["-m", "pip", "install"]);
-    append_install_options(&mut cmd, &opts);
-    cmd.arg(&package);
+    let manager = manager_for_engine(&engine)?;
+    let package_command = manager.install_command(&venv, &package, &opts);
+    let mut cmd = command_from_package_command(&package_command);
 
     let output = run_with_optional_cancel(&mut cmd, 600, cancel)?;
     if output.status.success() {
-        Ok(format!("Installed {}", package))
+        Ok(manager.install_success_message(&package))
     } else {
         Err(classify_install_error(
             String::from_utf8_lossy(&output.stderr).to_string(),
@@ -84,30 +55,12 @@ pub fn uninstall_package_internal(
     cancel: Option<&AtomicBool>,
 ) -> Result<String, String> {
     let venv = ensure_venv_dir(&venv_path)?;
-    ensure_mutable_engine(&engine)?;
-    if engine == "uv" {
-        let uv_path = get_manager_path("uv");
-        let python_path = get_python_path(&venv);
-        let mut cmd = new_command(uv_path);
-        cmd.env("UV_CACHE_DIR", uv_cache_dir_for(&venv));
-        cmd.args(["pip", "uninstall", "--python"])
-            .arg(&python_path)
-            .args(["-y", &package]);
-        let out = run_with_optional_cancel(&mut cmd, 300, cancel)?;
-        if out.status.success() {
-            return Ok(format!("uv uninstalled {}", package));
-        }
-        return Err(classify_install_error(
-            String::from_utf8_lossy(&out.stderr).to_string(),
-        ));
-    }
-
-    let python = get_python_path(&venv);
-    let mut cmd = new_command(python);
-    cmd.args(["-m", "pip", "uninstall", "-y", &package]);
+    let manager = manager_for_engine(&engine)?;
+    let package_command = manager.uninstall_command(&venv, &package);
+    let mut cmd = command_from_package_command(&package_command);
     let out = run_with_optional_cancel(&mut cmd, 300, cancel)?;
     if out.status.success() {
-        Ok(format!("Uninstalled {}", package))
+        Ok(manager.uninstall_success_message(&package))
     } else {
         Err(classify_install_error(
             String::from_utf8_lossy(&out.stderr).to_string(),
@@ -122,30 +75,12 @@ pub fn update_package_internal(
     cancel: Option<&AtomicBool>,
 ) -> Result<String, String> {
     let venv = ensure_venv_dir(&venv_path)?;
-    ensure_mutable_engine(&engine)?;
-    if engine == "uv" {
-        let uv_path = get_manager_path("uv");
-        let python_path = get_python_path(&venv);
-        let mut cmd = new_command(uv_path);
-        cmd.env("UV_CACHE_DIR", uv_cache_dir_for(&venv));
-        cmd.args(["pip", "install", "--upgrade", "--python"])
-            .arg(&python_path)
-            .arg(&package);
-        let out = run_with_optional_cancel(&mut cmd, 600, cancel)?;
-        if out.status.success() {
-            return Ok(format!("uv updated {}", package));
-        }
-        return Err(classify_install_error(
-            String::from_utf8_lossy(&out.stderr).to_string(),
-        ));
-    }
-
-    let python = get_python_path(&venv);
-    let mut cmd = new_command(python);
-    cmd.args(["-m", "pip", "install", "--upgrade", &package]);
+    let manager = manager_for_engine(&engine)?;
+    let package_command = manager.update_command(&venv, &package);
+    let mut cmd = command_from_package_command(&package_command);
     let out = run_with_optional_cancel(&mut cmd, 600, cancel)?;
     if out.status.success() {
-        Ok(format!("Updated {}", package))
+        Ok(manager.update_success_message(&package))
     } else {
         Err(classify_install_error(
             String::from_utf8_lossy(&out.stderr).to_string(),
@@ -160,62 +95,18 @@ pub fn install_program_and_args(
     opts: &InstallOptions,
 ) -> Result<(String, Vec<String>), String> {
     let venv = ensure_venv_dir(venv_path)?;
-    ensure_mutable_engine(engine)?;
-    let mut common: Vec<String> = Vec::new();
-    if let Some(url) = opts.index_url.as_deref().filter(|s| !s.is_empty()) {
-        common.push("--index-url".into());
-        common.push(url.into());
-    }
-    if let Some(url) = opts.extra_index_url.as_deref().filter(|s| !s.is_empty()) {
-        common.push("--extra-index-url".into());
-        common.push(url.into());
-    }
-    if opts.editable {
-        common.push("-e".into());
-    }
-
-    if engine == "uv" {
-        let uv = get_manager_path("uv");
-        let py = get_python_path(&venv);
-        let mut args = vec![
-            "pip".into(),
-            "install".into(),
-            "--python".into(),
-            py.to_string_lossy().into_owned(),
-        ];
-        args.extend(common);
-        args.push(package.to_string());
-        Ok((uv, args))
-    } else {
-        let python = get_python_path(&venv);
-        let mut args: Vec<String> = vec!["-m".into(), "pip".into(), "install".into()];
-        args.extend(common);
-        args.push(package.to_string());
-        Ok((python.to_string_lossy().into_owned(), args))
-    }
+    let manager = manager_for_engine(engine)?;
+    let command = manager.install_command(&venv, package, opts);
+    Ok((command.program, command.args))
 }
 
-fn ensure_mutable_engine(engine: &str) -> Result<(), String> {
-    if engine == "pip" || engine == "uv" {
-        Ok(())
-    } else {
-        Err(format!(
-            "{} environments are read-only in VOrchestra. Use the native manager for package changes.",
-            engine
-        ))
+fn command_from_package_command(package_command: &PackageCommand) -> std::process::Command {
+    let mut cmd = new_command(&package_command.program);
+    cmd.args(&package_command.args);
+    for (key, value) in &package_command.env {
+        cmd.env(key, value);
     }
-}
-
-fn append_install_options(cmd: &mut std::process::Command, opts: &InstallOptions) {
-    if let Some(url) = opts.index_url.as_deref().filter(|s| !s.is_empty()) {
-        cmd.args(["--index-url", url]);
-    }
-    if let Some(url) = opts.extra_index_url.as_deref().filter(|s| !s.is_empty()) {
-        cmd.args(["--extra-index-url", url]);
-    }
-    if opts.editable {
-        cmd.arg("-e");
-    }
+    cmd
 }
 
 fn run_with_optional_cancel(
