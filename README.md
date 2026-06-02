@@ -330,6 +330,7 @@ Confirm Docker is installed and running. Save generated manifests before using B
 
 ## Documentation
 
+- [Published documentation site](https://ti-com-cafe.github.io/vorchestra/)
 - [Architecture](./docs/ARCHITECTURE.md)
 - [Command model](./docs/COMMANDS.md)
 - [Background jobs](./docs/JOBS.md)
