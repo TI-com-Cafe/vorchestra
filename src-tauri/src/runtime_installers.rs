@@ -271,6 +271,7 @@ pub async fn install_uv_elevated() -> Result<String, String> {
         #[cfg(unix)]
         {
             let temp_dir = std::env::temp_dir();
+            #[cfg(target_os = "linux")]
             let safe_path = temp_dir.to_string_lossy().to_string();
 
             #[cfg(target_os = "linux")]
@@ -462,6 +463,7 @@ pub async fn install_python_elevated(version: String) -> Result<String, String> 
         #[cfg(unix)]
         {
             let temp_dir = std::env::temp_dir();
+            #[cfg(target_os = "linux")]
             let safe_path = temp_dir.to_string_lossy().to_string();
 
             #[cfg(target_os = "linux")]

@@ -12,6 +12,8 @@ use crate::package_jobs::{
     analyze_package_hygiene_job, check_dependency_tree_prereq_impl, export_requirements_job,
     get_dependency_tree_job, get_package_sizes_job,
 };
+#[cfg(windows)]
+use crate::process_utils::new_command;
 pub use crate::package_ops::{
     install_dependency_internal, install_dependency_with_cancel_internal,
     install_dependency_with_options_internal, install_program_and_args, uninstall_package_internal,
