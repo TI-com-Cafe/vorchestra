@@ -42,7 +42,7 @@ pub(crate) fn list_venvs_job(
     for entry in walker.filter_map(|e| e.ok()) {
         ensure_not_cancelled(&job.cancel)?;
         visited += 1;
-        if visited % 250 == 0 {
+        if visited.checked_rem(250) == Some(0) {
             set_job_progress(
                 job,
                 format!("Scanning workspace... {} entries checked", visited),

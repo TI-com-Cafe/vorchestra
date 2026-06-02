@@ -110,17 +110,17 @@ fn validate_dependency_tree_node(node: &serde_json::Value) -> Result<(), String>
     let obj = node
         .as_object()
         .ok_or_else(|| "Dependency tree node must be an object".to_string())?;
-    if !obj
+    if obj
         .get("package_name")
         .and_then(|v| v.as_str())
-        .is_some_and(|s| !s.is_empty())
+        .is_none_or(|s| s.is_empty())
     {
         return Err("Dependency tree node is missing package_name".to_string());
     }
-    if !obj
+    if obj
         .get("installed_version")
         .and_then(|v| v.as_str())
-        .is_some_and(|s| !s.is_empty())
+        .is_none_or(|s| s.is_empty())
     {
         return Err("Dependency tree node is missing installed_version".to_string());
     }
