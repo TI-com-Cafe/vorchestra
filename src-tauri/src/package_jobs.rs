@@ -1,11 +1,13 @@
 //! Long-running package inspection jobs used by Tauri package commands.
 
 use crate::helpers::{
-    build_dependency_tree_with_python_and_cancel, ensure_venv_dir, get_python_path, new_command,
-    run_command_with_timeout, run_command_with_timeout_and_cancel, stdout_or_stderr,
+    build_dependency_tree_with_python_and_cancel, detect_manager_type, ensure_venv_dir,
+    get_python_path, new_command, run_command_with_timeout, run_command_with_timeout_and_cancel,
+    stdout_or_stderr,
 };
 use crate::jobs::{set_job_progress, BackgroundJobHandle};
 use crate::package_hygiene::{parse_package_hygiene_report, PACKAGE_HYGIENE_SCRIPT};
+use crate::package_managers::manager_for_engine;
 use crate::package_sizes::scan_package_sizes;
 use crate::types::{DependencyTreePrereq, PackageHygieneReport};
 use std::collections::HashMap;
@@ -118,19 +120,23 @@ pub(crate) fn export_requirements_job(
 ) -> Result<String, String> {
     set_job_progress(job, "Preparing requirements export...", Some(0.15));
     let pb = ensure_venv_dir(&venv_path)?;
-    let python = get_python_path(&pb);
+    let engine = detect_manager_type(&pb);
+    let manager = manager_for_engine(&engine)?;
     let project_root = pb.parent().unwrap_or(&pb).to_path_buf();
     let req_path = project_root.join("requirements.txt");
-    let mut cmd = new_command(python);
-    cmd.args(["-m", "pip", "freeze"]);
-    set_job_progress(job, "Running pip freeze...", Some(0.45));
+    let mut cmd = manager.freeze_command(&pb).to_command();
+    set_job_progress(job, "Freezing package list...", Some(0.45));
     let out = run_command_with_timeout_and_cancel(&mut cmd, 60, job.cancel.as_ref())?;
     if out.status.success() {
         set_job_progress(job, "Writing requirements.txt...", Some(0.85));
         fs::write(&req_path, out.stdout).map_err(|e| e.to_string())?;
         Ok(format!("Exported to {}", req_path.to_string_lossy()))
     } else {
-        Err(String::from_utf8_lossy(&out.stderr).to_string())
+        Err(format!(
+            "{}: {}",
+            manager.freeze_failure_prefix(),
+            stdout_or_stderr(&out).trim()
+        ))
     }
 }
 
