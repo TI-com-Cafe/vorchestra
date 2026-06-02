@@ -123,6 +123,9 @@ pub fn run() {
             commands::snapshots::list_project_snapshots,
             commands::snapshots::start_create_project_snapshot_job,
             commands::snapshots::start_restore_project_snapshot_job,
+            // Local-first AI
+            commands::local_ai::check_local_ai_status,
+            commands::local_ai::explain_environment_with_local_ai,
             // Project autodetect
             commands::project::start_detect_project_manifests_job,
             // Cache hygiene

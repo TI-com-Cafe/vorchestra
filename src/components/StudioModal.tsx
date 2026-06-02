@@ -1,6 +1,6 @@
 import { Suspense, lazy, useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { Activity, BookmarkPlus, Box, GitCompare, Globe, HardDrive, Loader2, PackageCheck, X, Zap } from "lucide-react";
+import { Activity, BookmarkPlus, Bot, Box, GitCompare, Globe, HardDrive, Loader2, PackageCheck, X, Zap } from "lucide-react";
 import { STUDIO_TABS } from "../constants/ui";
 import { Script, StudioTabId, VenvDetails, VenvInfo } from "../types";
 import { cn } from "../utils/cn";
@@ -288,6 +288,9 @@ const EnvironmentBrief: React.FC<{
   const sizeMb = details?.size_mb ?? 0;
   const explanation = explainEnvironment(venv, details);
   const profile = classifyEnvironmentProfile(venv, details);
+  const [aiBusy, setAiBusy] = useState(false);
+  const [aiOutput, setAiOutput] = useState<string | null>(null);
+  const [aiError, setAiError] = useState<string | null>(null);
 
   const productSignals = [
     ...health.signals.map(signal => signal.label),
@@ -299,6 +302,42 @@ const EnvironmentBrief: React.FC<{
     else if (explanation.actionTab === "diagnostics") onOpenDiagnostics();
     else if (explanation.actionTab === "lock") onOpenLock();
     else onOpenPackages();
+  };
+
+  const explainWithLocalAi = async () => {
+    setAiBusy(true);
+    setAiError(null);
+    setAiOutput(null);
+    try {
+      const context = [
+        `Name: ${venv.name}`,
+        `Path: ${venv.path}`,
+        `Python: ${venv.version}`,
+        `Status: ${venv.status}`,
+        `Issue: ${venv.issue || "none"}`,
+        `Manager: ${venv.manager_type}`,
+        `Template: ${venv.template_name || "custom"}`,
+        `Health: ${health.score}/100 - ${health.label}`,
+        `Package count: ${packageCount}`,
+        `Size MB: ${sizeMb.toFixed(1)}`,
+        `Current explanation: ${explanation.summary}`,
+        `Next step: ${explanation.nextStep}`,
+        `Signals: ${productSignals.join(", ") || "none"}`,
+        `Packages sample: ${(details?.packages || []).slice(0, 40).join(", ") || "none"}`
+      ].join("\n");
+      const status = await invoke<{ available: boolean; models: string[]; error: string | null }>("check_local_ai_status");
+      if (!status.available) {
+        setAiError(status.error || "Local AI is unavailable. Start Ollama and install a model such as llama3.2.");
+        return;
+      }
+      const model = status.models[0] || "llama3.2";
+      const output = await invoke<string>("explain_environment_with_local_ai", { context, model });
+      setAiOutput(output);
+    } catch (err) {
+      setAiError(`${err}`);
+    } finally {
+      setAiBusy(false);
+    }
   };
 
   return (
@@ -327,6 +366,30 @@ const EnvironmentBrief: React.FC<{
             <p className="mt-2 text-[10px] font-black uppercase tracking-widest text-blue-600 dark:text-blue-300">
               Next: {explanation.nextStep}
             </p>
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <button
+                onClick={explainWithLocalAi}
+                disabled={aiBusy}
+                className="vo-secondary-action inline-flex items-center gap-2 rounded-xl px-3 py-1.5 text-[9px] disabled:opacity-50"
+              >
+                {aiBusy ? <Loader2 size={12} className="animate-spin" /> : <Bot size={12} />}
+                {aiBusy ? "Asking local AI..." : "Explain with local AI"}
+              </button>
+              <span className="text-[9px] font-bold text-slate-400">
+                Ollama only. Localhost, no telemetry.
+              </span>
+            </div>
+            {aiError && (
+              <p className="mt-2 rounded-xl bg-amber-50 dark:bg-amber-950/20 px-3 py-2 text-[10px] font-bold text-amber-700 dark:text-amber-300">
+                {aiError}
+              </p>
+            )}
+            {aiOutput && (
+              <div className="mt-3 rounded-2xl border border-blue-100 dark:border-blue-900/30 bg-blue-50/70 dark:bg-blue-950/20 px-4 py-3">
+                <p className="text-[9px] font-black uppercase tracking-widest text-blue-700 dark:text-blue-300">Local AI analysis</p>
+                <p className="mt-2 whitespace-pre-wrap text-xs font-semibold leading-relaxed text-slate-700 dark:text-slate-200">{aiOutput}</p>
+              </div>
+            )}
           </div>
           <div className="vo-subpanel rounded-2xl border px-4 py-3">
             <p className="text-[8px] font-black uppercase tracking-widest text-slate-400">Environment profile</p>

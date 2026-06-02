@@ -226,6 +226,14 @@ pub struct ProjectSnapshotInfo {
     pub freeze_file: Option<String>,
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct LocalAiStatus {
+    pub available: bool,
+    pub provider: String,
+    pub models: Vec<String>,
+    pub error: Option<String>,
+}
+
 /// One row of a venv-to-venv comparison. `DriftKind` is reused with this
 /// mapping:
 ///   * `InSync`            -> both venvs have the same package & version

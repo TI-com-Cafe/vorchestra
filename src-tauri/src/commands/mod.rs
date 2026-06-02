@@ -8,6 +8,7 @@ pub mod diagnostics;
 pub mod files;
 pub mod integrations;
 pub mod integrations_extra;
+pub mod local_ai;
 pub mod lockfile;
 pub mod packages;
 pub mod project;

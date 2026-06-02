@@ -233,6 +233,13 @@ export interface ProjectSnapshotInfo {
   freeze_file: string | null;
 }
 
+export interface LocalAiStatus {
+  available: boolean;
+  provider: string;
+  models: string[];
+  error: string | null;
+}
+
 export interface BundleManifest {
   format_version: number;
   venv_name: string;
