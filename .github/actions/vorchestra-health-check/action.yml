@@ -1,0 +1,24 @@
+name: VOrchestra Health Check
+description: Run VOrchestra-style Python environment health checks in GitHub Actions.
+inputs:
+  mode:
+    description: health, security, metadata, or all
+    required: false
+    default: health
+  python:
+    description: Python executable to inspect
+    required: false
+    default: python
+  requirements-file:
+    description: Optional requirements file to install before checking
+    required: false
+    default: ""
+runs:
+  using: composite
+  steps:
+    - name: Run VOrchestra health check
+      shell: bash
+      env:
+        PYTHON_BIN: ${{ inputs.python }}
+        REQUIREMENTS_FILE: ${{ inputs.requirements-file }}
+      run: ${{ github.action_path }}/../../../scripts/vorchestra-health-check.sh "${{ inputs.mode }}"
