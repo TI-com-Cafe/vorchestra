@@ -195,6 +195,7 @@ export interface PackageMetadataAudit {
   licenses: LicenseBucket[];
   suspicious_packages?: SuspiciousPackage[];
   deprecated_packages?: DeprecatedPackage[];
+  policy?: PolicyDecision;
 }
 
 export interface SuspiciousPackage {
@@ -205,6 +206,21 @@ export interface SuspiciousPackage {
 export interface DeprecatedPackage {
   name: string;
   reason: string;
+}
+
+export interface PolicyFinding {
+  severity: "info" | "warning" | "block" | string;
+  code: string;
+  package_name: string | null;
+  message: string;
+  evidence: string | null;
+}
+
+export interface PolicyDecision {
+  enabled: boolean;
+  allowed: boolean;
+  config_path: string | null;
+  findings: PolicyFinding[];
 }
 
 export interface BundleManifest {

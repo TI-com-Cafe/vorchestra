@@ -17,6 +17,7 @@ pub mod package_jobs;
 pub mod package_managers;
 pub mod package_ops;
 pub mod package_sizes;
+pub mod policy_engine;
 pub mod process_utils;
 pub mod project_manifest;
 pub mod python_parsers;
@@ -79,6 +80,7 @@ pub fn run() {
             commands::packages::search_pypi,
             commands::packages::start_search_pypi_job,
             commands::packages::start_check_install_conflicts_job,
+            commands::packages::evaluate_install_policy,
             commands::packages::start_preview_upgrade_job,
             commands::packages::start_why_is_installed_job,
             commands::packages::start_analyze_package_hygiene_job,

@@ -2,7 +2,7 @@ import { FormEvent, useEffect, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
 
-import { VenvInfo } from "../../types";
+import { PolicyDecision, VenvInfo } from "../../types";
 import { packageService, needsElevation, stripElevationPrefix } from "../../services/packageManager";
 import { waitForBackgroundJob } from "../../services/backgroundJobs";
 
@@ -68,6 +68,7 @@ export function usePyPIExplorerController({ venv, onInstalled, setMessage }: Use
   const [conflictReport, setConflictReport] = useState<string | null>(null);
   const [isCompatible, setIsCompatible] = useState<boolean | null>(null);
   const [installImpact, setInstallImpact] = useState<InstallImpactSummary | null>(null);
+  const [installPolicy, setInstallPolicy] = useState<PolicyDecision | null>(null);
   const conflictJobRef = useRef<string | null>(null);
   const searchJobRef = useRef<string | null>(null);
   const searchRequestRef = useRef(0);
@@ -90,9 +91,30 @@ export function usePyPIExplorerController({ venv, onInstalled, setMessage }: Use
     setIsCompatible(null);
     setConflictReport(null);
     setInstallImpact(null);
+    setInstallPolicy(null);
+  };
+
+  const evaluateInstallPolicy = async (pkg: string): Promise<PolicyDecision | null> => {
+    try {
+      const decision = await invoke<PolicyDecision>("evaluate_install_policy", {
+        venvPath: venv.path,
+        package: pkg
+      });
+      setInstallPolicy(decision);
+      return decision;
+    } catch (err) {
+      setMessage(`Policy check failed: ${err}`);
+      return null;
+    }
   };
 
   const runInstall = async (pkg: string, opts: InstallOpts, label: string) => {
+    const policy = await evaluateInstallPolicy(pkg);
+    if (policy && !policy.allowed) {
+      const reason = policy.findings.find(f => f.severity === "block")?.message || "Blocked by project policy.";
+      setMessage(reason);
+      return;
+    }
     setInstalling(true);
     setPendingElevation(null);
     setMessage(`Installing ${label}...`);
@@ -215,6 +237,7 @@ export function usePyPIExplorerController({ venv, onInstalled, setMessage }: Use
       const report = await waitForBackgroundJob<string>(jobId);
       setConflictReport(report);
       setInstallImpact(summarizeInstallImpact(report));
+      await evaluateInstallPolicy(fullPackage);
       const lower = report.toLowerCase();
       setIsCompatible(!(lower.includes("conflict") || lower.includes("error:") || lower.includes("incompatible")));
     } catch (err) {
@@ -236,6 +259,7 @@ export function usePyPIExplorerController({ venv, onInstalled, setMessage }: Use
       setConflictReport("Compatibility check cancelled.");
       setIsCompatible(null);
       setInstallImpact(null);
+      setInstallPolicy(null);
     } catch (err) {
       setMessage(`Cancel failed: ${err}`);
     } finally {
@@ -310,6 +334,7 @@ export function usePyPIExplorerController({ venv, onInstalled, setMessage }: Use
     conflictReport,
     isCompatible,
     installImpact,
+    installPolicy,
     gitUrl,
     setGitUrl,
     gitRef,

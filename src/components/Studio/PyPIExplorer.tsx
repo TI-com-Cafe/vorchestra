@@ -186,7 +186,7 @@ export const PyPIExplorer: React.FC<PyPIExplorerProps> = ({ venv, onClose, onIns
                       {c.checkingConflicts ? <X size={18} /> : <Activity size={18} className="text-blue-600" />}
                       {c.checkingConflicts ? "Cancel Check" : "Check Compatibility"}
                     </button>
-                    <button onClick={c.installing ? c.cancelInstall : c.installPypi} disabled={c.checkingConflicts || c.installingElevated}
+                    <button onClick={c.installing ? c.cancelInstall : c.installPypi} disabled={c.checkingConflicts || c.installingElevated || (c.installPolicy?.enabled && !c.installPolicy.allowed)}
                       className="vo-primary-action flex items-center justify-center gap-3 disabled:bg-slate-400 px-8 py-3 rounded-2xl text-sm shadow-lg shadow-blue-600/20">
                       {c.installing ? <X size={18} /> : <Plus size={18} />}
                       {c.installing ? "Cancel Install" : "Install"}
@@ -229,6 +229,30 @@ export const PyPIExplorer: React.FC<PyPIExplorerProps> = ({ venv, onClose, onIns
                           {c.conflictReport || "This version may cause issues with your existing dependencies."}
                         </p>
                       )}
+                    </div>
+                  </div>
+                )}
+
+                {c.installPolicy?.enabled && c.installPolicy.findings.length > 0 && (
+                  <div className={cn(
+                    "rounded-2xl border p-4 flex items-start gap-3",
+                    c.installPolicy.allowed
+                      ? "bg-amber-50 border-amber-200 text-amber-800 dark:bg-amber-950/20 dark:border-amber-900/40 dark:text-amber-200"
+                      : "bg-red-50 border-red-200 text-red-800 dark:bg-red-950/20 dark:border-red-900/40 dark:text-red-200"
+                  )}>
+                    <ShieldAlert size={18} className="shrink-0 mt-0.5" />
+                    <div className="min-w-0">
+                      <p className="text-[10px] font-black uppercase tracking-widest">
+                        {c.installPolicy.allowed ? "Project Policy Warning" : "Install Blocked By Project Policy"}
+                      </p>
+                      <div className="mt-2 space-y-1">
+                        {c.installPolicy.findings.slice(0, 4).map((finding) => (
+                          <p key={`${finding.code}-${finding.message}`} className="text-[10px] font-bold leading-relaxed">
+                            {finding.message}
+                            {finding.evidence ? <span className="opacity-70"> {finding.evidence}</span> : null}
+                          </p>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 )}

@@ -2,7 +2,7 @@ import React, { useMemo, useState, useEffect, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { save as saveDialog } from "@tauri-apps/plugin-dialog";
 import { ShieldAlert, AlertCircle, CheckCircle2, Loader2, RefreshCcw, ExternalLink, ShieldCheck, BadgeCheck, Download, Search, Terminal } from "lucide-react";
-import { VenvInfo, OutdatedPackage, PackageMetadataAudit } from "../../types";
+import { VenvInfo, OutdatedPackage, PackageMetadataAudit, PolicyDecision } from "../../types";
 import { waitForBackgroundJob } from "../../services/backgroundJobs";
 import { packageService, needsElevation, stripElevationPrefix } from "../../services/packageManager";
 import { isReadOnlyManager, readOnlyManagerLabel } from "../../utils/venvManagers";
@@ -30,6 +30,7 @@ interface SecurityDependency {
 
 interface SecurityReport {
   dependencies?: SecurityDependency[];
+  _vorchestra_policy?: PolicyDecision;
 }
 
 interface SecurityFinding {
@@ -60,6 +61,36 @@ interface MetadataReviewItem {
   reason: string;
   action: string;
 }
+
+const PolicyBanner: React.FC<{ policy?: PolicyDecision; compact?: boolean }> = ({ policy, compact = false }) => {
+  if (!policy?.enabled || policy.findings.length === 0) return null;
+  const blocked = !policy.allowed;
+  return (
+    <div className={`rounded-2xl border ${compact ? "p-3" : "p-4"} ${
+      blocked
+        ? "bg-red-50 border-red-200 text-red-800 dark:bg-red-950/20 dark:border-red-900/40 dark:text-red-200"
+        : "bg-amber-50 border-amber-200 text-amber-800 dark:bg-amber-950/20 dark:border-amber-900/40 dark:text-amber-200"
+    }`}>
+      <p className="text-[10px] font-black uppercase tracking-widest">
+        {blocked ? "Project policy has blocking findings" : "Project policy warnings"}
+      </p>
+      <div className="mt-2 space-y-1">
+        {policy.findings.slice(0, 5).map((finding) => (
+          <p key={`${finding.code}-${finding.package_name || ""}-${finding.message}`} className="text-[10px] font-bold leading-relaxed">
+            {finding.package_name ? <span className="font-mono">{finding.package_name}: </span> : null}
+            {finding.message}
+            {finding.evidence ? <span className="opacity-70"> {finding.evidence}</span> : null}
+          </p>
+        ))}
+        {policy.findings.length > 5 && (
+          <p className="text-[9px] font-black uppercase tracking-widest opacity-70">
+            +{policy.findings.length - 5} more policy finding{policy.findings.length - 5 === 1 ? "" : "s"}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+};
 
 function getSecurityToolInstallCommand(venv: VenvInfo, pythonPath: string): string {
   if (venv.manager_type === "uv") {
@@ -717,6 +748,7 @@ export const StudioDiagnostics: React.FC<StudioDiagnosticsProps> = ({ venv }) =>
           </div>
         ) : securityReport ? (
           <div className="space-y-4">
+            <PolicyBanner policy={securityReport._vorchestra_policy} />
             {securityFindings.length > 0 ? (
               <div className="grid grid-cols-1 gap-3">
                 <div className="rounded-[2rem] border border-red-100 dark:border-red-900/30 bg-red-50 dark:bg-red-950/10 p-4">
@@ -855,6 +887,7 @@ export const StudioDiagnostics: React.FC<StudioDiagnosticsProps> = ({ venv }) =>
               </p>
             </div>
             <div className="space-y-4">
+              <PolicyBanner policy={metadataAudit.policy} compact />
               <div className="vo-panel rounded-2xl border p-4">
                 <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                   <div>

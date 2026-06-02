@@ -20,8 +20,22 @@ pub use crate::package_ops::{
     install_program_and_args, uninstall_package_internal, uninstall_package_with_output_internal,
     update_package_internal, update_package_with_output_internal, InstallOptions,
 };
+use crate::policy_engine::evaluate_install_policy_for_venv;
 #[cfg(windows)]
 use crate::process_utils::new_command;
+
+#[tauri::command]
+pub async fn evaluate_install_policy(
+    venv_path: String,
+    package: String,
+) -> Result<crate::types::PolicyDecision, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let venv = ensure_venv_dir(&venv_path)?;
+        evaluate_install_policy_for_venv(&venv, &package)
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
 
 #[tauri::command]
 pub fn start_install_dependency_job(

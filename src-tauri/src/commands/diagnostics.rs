@@ -12,6 +12,10 @@ use crate::jobs::{
     AppState,
 };
 use crate::package_managers::{manager_for_engine, pip_audit_install_hint_for_engine};
+use crate::policy_engine::{
+    attach_policy_to_security_report, empty_decision, evaluate_metadata_policy,
+    load_policy_for_project, project_root_from_venv,
+};
 use crate::types::{DeprecatedPackage, LicenseBucket, PackageMetadataAudit, SuspiciousPackage};
 use std::collections::BTreeMap;
 use std::fs;
@@ -121,7 +125,7 @@ pub fn start_security_audit_job(
                     |stream, line| append_job_log(&blocking_job, stream, line),
                 )?;
 
-                if out.status.success() {
+                let raw_report = if out.status.success() {
                     parse_security_audit_json_from_output(&out)
                 } else {
                     let err_msg = String::from_utf8_lossy(&out.stderr).to_string();
@@ -166,7 +170,8 @@ pub fn start_security_audit_job(
                     } else {
                         Err(err_msg)
                     }
-                }
+                }?;
+                attach_policy_to_security_report(&project_root_from_venv(&venv), raw_report)
             })
             .await
             .map_err(|e| e.to_string())
@@ -260,6 +265,7 @@ fn parse_package_metadata_audit(raw: &str) -> Result<PackageMetadataAudit, Strin
         licenses: buckets,
         suspicious_packages,
         deprecated_packages,
+        policy: empty_decision(None),
     })
 }
 
@@ -350,7 +356,23 @@ print(json.dumps(rows))
                     return Err(stdout_or_stderr(&out));
                 }
                 let raw = String::from_utf8_lossy(&out.stdout);
-                let audit = parse_package_metadata_audit(&raw)?;
+                let mut audit = parse_package_metadata_audit(&raw)?;
+                let project_root = project_root_from_venv(&venv);
+                if let Some((config, path)) = load_policy_for_project(&project_root)? {
+                    let license_pairs: Vec<(String, usize)> = audit
+                        .licenses
+                        .iter()
+                        .map(|bucket| (bucket.license.clone(), bucket.count))
+                        .collect();
+                    audit.policy = evaluate_metadata_policy(
+                        &config,
+                        Some(&path),
+                        &audit.missing_license,
+                        &license_pairs,
+                        &audit.suspicious_packages,
+                        &audit.deprecated_packages,
+                    );
+                }
                 serde_json::to_value(audit).map_err(|e| e.to_string())
             })
             .await

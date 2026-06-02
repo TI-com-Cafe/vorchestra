@@ -174,6 +174,7 @@ pub struct PackageMetadataAudit {
     pub licenses: Vec<LicenseBucket>,
     pub suspicious_packages: Vec<SuspiciousPackage>,
     pub deprecated_packages: Vec<DeprecatedPackage>,
+    pub policy: PolicyDecision,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -186,6 +187,32 @@ pub struct SuspiciousPackage {
 pub struct DeprecatedPackage {
     pub name: String,
     pub reason: String,
+}
+
+#[derive(Serialize, Clone, Debug, Default, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum PolicyAction {
+    Off,
+    #[default]
+    Warn,
+    Block,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct PolicyFinding {
+    pub severity: String,
+    pub code: String,
+    pub package_name: Option<String>,
+    pub message: String,
+    pub evidence: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct PolicyDecision {
+    pub enabled: bool,
+    pub allowed: bool,
+    pub config_path: Option<String>,
+    pub findings: Vec<PolicyFinding>,
 }
 
 /// One row of a venv-to-venv comparison. `DriftKind` is reused with this
