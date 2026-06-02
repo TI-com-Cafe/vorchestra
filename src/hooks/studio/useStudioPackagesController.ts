@@ -36,7 +36,7 @@ export function useStudioPackagesController({
   const [syncingProject, setSyncingProject] = useState(false);
   const [hygieneReport, setHygieneReport] = useState<PackageHygieneReport | null>(null);
   const [analyzingHygiene, setAnalyzingHygiene] = useState(false);
-  const [packageAction, setPackageAction] = useState<{ jobId: string; label: string } | null>(null);
+  const [packageAction, setPackageAction] = useState<{ jobId: string; label: string; logs?: string[] } | null>(null);
   const [insightAction, setInsightAction] = useState<{ jobId: string; label: string } | null>(null);
   const [pendingUninstall, setPendingUninstall] = useState<string | null>(null);
 
@@ -77,6 +77,14 @@ export function useStudioPackagesController({
       setMessage("Package cataloging cancelled.");
     }
   }, [cancelJob, setMessage]);
+
+  const updatePackageActionFromSnapshot = useCallback((snapshot: { message?: string | null; logs?: string[] }) => {
+    const logs = snapshot.logs ?? [];
+    setPackageAction((prev) => prev ? { ...prev, logs } : prev);
+    const lastLog = logs[logs.length - 1];
+    if (lastLog) setMessage(lastLog);
+    else if (snapshot.message) setMessage(snapshot.message);
+  }, [setMessage]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -203,11 +211,7 @@ export function useStudioPackagesController({
       setPendingUninstall(null);
       await packageService.uninstall(venv, pkgName, {
         onJobStarted: (jobId) => setPackageAction({ jobId, label: `Uninstalling ${pkgName}` }),
-        onUpdate: (snapshot) => {
-          const lastLog = snapshot.logs?.[snapshot.logs.length - 1];
-          if (lastLog) setMessage(lastLog);
-          else if (snapshot.message) setMessage(snapshot.message);
-        }
+        onUpdate: updatePackageActionFromSnapshot
       });
       setMessage(`Uninstalled ${pkgName}`);
       refresh();
@@ -226,11 +230,7 @@ export function useStudioPackagesController({
     try {
       await packageService.update(venv, pkgName, {
         onJobStarted: (jobId) => setPackageAction({ jobId, label: `Updating ${pkgName}` }),
-        onUpdate: (snapshot) => {
-          const lastLog = snapshot.logs?.[snapshot.logs.length - 1];
-          if (lastLog) setMessage(lastLog);
-          else if (snapshot.message) setMessage(snapshot.message);
-        }
+        onUpdate: updatePackageActionFromSnapshot
       });
       setMessage(`Updated ${pkgName}`);
       refresh();

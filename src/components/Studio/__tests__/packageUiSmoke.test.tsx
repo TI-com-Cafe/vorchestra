@@ -41,9 +41,10 @@ describe("Studio package UI smoke tests", () => {
 
   it("renders cancellable job banner", async () => {
     const onCancel = vi.fn();
-    render(<JobActionBanner label="Updating django" tone="amber" onCancel={onCancel} />);
+    render(<JobActionBanner label="Updating django" logs={["[stdout] downloading django", "[stderr] warning"]} tone="amber" onCancel={onCancel} />);
 
     expect(screen.getByText(/updating django/i)).toBeInTheDocument();
+    expect(screen.getByText(/\[stdout\] downloading django/i)).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: /cancel/i }));
     expect(onCancel).toHaveBeenCalledOnce();
   });

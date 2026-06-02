@@ -57,7 +57,11 @@ export const StudioPackages: React.FC<StudioPackagesProps> = ({ venv, details: i
         )}
 
         {controller.packageAction && (
-          <JobActionBanner label={controller.packageAction.label} onCancel={controller.cancelPackageAction} />
+          <JobActionBanner
+            label={controller.packageAction.label}
+            logs={controller.packageAction.logs}
+            onCancel={controller.cancelPackageAction}
+          />
         )}
 
         {controller.insightAction && (
