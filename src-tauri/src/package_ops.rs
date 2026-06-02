@@ -3,11 +3,11 @@
 use std::sync::atomic::AtomicBool;
 
 use crate::helpers::{
-    classify_install_error, ensure_venv_dir, new_command, run_command_with_timeout,
+    classify_install_error, ensure_venv_dir, run_command_with_timeout,
     run_command_with_timeout_and_cancel,
 };
+use crate::package_managers::manager_for_engine;
 pub use crate::package_managers::InstallOptions;
-use crate::package_managers::{manager_for_engine, PackageCommand};
 
 pub fn install_dependency_internal(
     venv_path: String,
@@ -36,7 +36,7 @@ pub fn install_dependency_with_cancel_internal(
     let venv = ensure_venv_dir(&venv_path)?;
     let manager = manager_for_engine(&engine)?;
     let package_command = manager.install_command(&venv, &package, &opts);
-    let mut cmd = command_from_package_command(&package_command);
+    let mut cmd = package_command.to_command();
 
     let output = run_with_optional_cancel(&mut cmd, 600, cancel)?;
     if output.status.success() {
@@ -57,7 +57,7 @@ pub fn uninstall_package_internal(
     let venv = ensure_venv_dir(&venv_path)?;
     let manager = manager_for_engine(&engine)?;
     let package_command = manager.uninstall_command(&venv, &package);
-    let mut cmd = command_from_package_command(&package_command);
+    let mut cmd = package_command.to_command();
     let out = run_with_optional_cancel(&mut cmd, 300, cancel)?;
     if out.status.success() {
         Ok(manager.uninstall_success_message(&package))
@@ -77,7 +77,7 @@ pub fn update_package_internal(
     let venv = ensure_venv_dir(&venv_path)?;
     let manager = manager_for_engine(&engine)?;
     let package_command = manager.update_command(&venv, &package);
-    let mut cmd = command_from_package_command(&package_command);
+    let mut cmd = package_command.to_command();
     let out = run_with_optional_cancel(&mut cmd, 600, cancel)?;
     if out.status.success() {
         Ok(manager.update_success_message(&package))
@@ -98,15 +98,6 @@ pub fn install_program_and_args(
     let manager = manager_for_engine(engine)?;
     let command = manager.install_command(&venv, package, opts);
     Ok((command.program, command.args))
-}
-
-fn command_from_package_command(package_command: &PackageCommand) -> std::process::Command {
-    let mut cmd = new_command(&package_command.program);
-    cmd.args(&package_command.args);
-    for (key, value) in &package_command.env {
-        cmd.env(key, value);
-    }
-    cmd
 }
 
 fn run_with_optional_cancel(

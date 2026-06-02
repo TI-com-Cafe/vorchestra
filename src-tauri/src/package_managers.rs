@@ -6,6 +6,7 @@
 
 use crate::helpers::{get_manager_path, get_python_path, uv_cache_dir_for};
 use std::path::{Path, PathBuf};
+use std::process::Command;
 
 /// Optional flags accepted by package install. Unknown / missing fields
 /// default safely (no extra args appended).
@@ -36,15 +37,30 @@ impl PackageCommand {
         self.env.push((key.into(), value.into()));
         self
     }
+
+    pub fn to_command(&self) -> Command {
+        let mut cmd = crate::helpers::new_command(&self.program);
+        cmd.args(&self.args);
+        for (key, value) in &self.env {
+            cmd.env(key, value);
+        }
+        cmd
+    }
 }
 
 pub trait PackageManager {
     fn install_command(&self, venv: &Path, package: &str, opts: &InstallOptions) -> PackageCommand;
     fn uninstall_command(&self, venv: &Path, package: &str) -> PackageCommand;
     fn update_command(&self, venv: &Path, package: &str) -> PackageCommand;
+    fn check_command(&self, venv: &Path) -> PackageCommand;
+    fn outdated_command(&self, venv: &Path) -> PackageCommand;
+    fn freeze_command(&self, venv: &Path) -> PackageCommand;
+    fn install_requirements_command(&self, venv: &Path, requirements_path: &Path)
+        -> PackageCommand;
     fn install_success_message(&self, package: &str) -> String;
     fn uninstall_success_message(&self, package: &str) -> String;
     fn update_success_message(&self, package: &str) -> String;
+    fn freeze_failure_prefix(&self) -> &'static str;
 }
 
 pub struct PipManager;
@@ -84,6 +100,50 @@ impl PackageManager for PipManager {
         )
     }
 
+    fn check_command(&self, venv: &Path) -> PackageCommand {
+        PackageCommand::new(
+            path_string(get_python_path(venv)),
+            vec!["-m".into(), "pip".into(), "check".into()],
+        )
+    }
+
+    fn outdated_command(&self, venv: &Path) -> PackageCommand {
+        PackageCommand::new(
+            path_string(get_python_path(venv)),
+            vec![
+                "-m".into(),
+                "pip".into(),
+                "list".into(),
+                "--outdated".into(),
+                "--format=json".into(),
+            ],
+        )
+    }
+
+    fn freeze_command(&self, venv: &Path) -> PackageCommand {
+        PackageCommand::new(
+            path_string(get_python_path(venv)),
+            vec!["-m".into(), "pip".into(), "freeze".into()],
+        )
+    }
+
+    fn install_requirements_command(
+        &self,
+        venv: &Path,
+        requirements_path: &Path,
+    ) -> PackageCommand {
+        PackageCommand::new(
+            path_string(get_python_path(venv)),
+            vec![
+                "-m".into(),
+                "pip".into(),
+                "install".into(),
+                "-r".into(),
+                path_string(requirements_path.to_path_buf()),
+            ],
+        )
+    }
+
     fn install_success_message(&self, package: &str) -> String {
         format!("Installed {}", package)
     }
@@ -94,6 +154,10 @@ impl PackageManager for PipManager {
 
     fn update_success_message(&self, package: &str) -> String {
         format!("Updated {}", package)
+    }
+
+    fn freeze_failure_prefix(&self) -> &'static str {
+        "pip freeze failed"
     }
 }
 
@@ -138,6 +202,63 @@ impl PackageManager for UvManager {
         )
     }
 
+    fn check_command(&self, venv: &Path) -> PackageCommand {
+        uv_command(
+            venv,
+            vec![
+                "pip".into(),
+                "check".into(),
+                "--python".into(),
+                path_string(get_python_path(venv)),
+            ],
+        )
+    }
+
+    fn outdated_command(&self, venv: &Path) -> PackageCommand {
+        uv_command(
+            venv,
+            vec![
+                "pip".into(),
+                "list".into(),
+                "--outdated".into(),
+                "--format".into(),
+                "json".into(),
+                "--python".into(),
+                path_string(get_python_path(venv)),
+            ],
+        )
+    }
+
+    fn freeze_command(&self, venv: &Path) -> PackageCommand {
+        uv_command(
+            venv,
+            vec![
+                "pip".into(),
+                "freeze".into(),
+                "--python".into(),
+                path_string(get_python_path(venv)),
+            ],
+        )
+    }
+
+    fn install_requirements_command(
+        &self,
+        venv: &Path,
+        requirements_path: &Path,
+    ) -> PackageCommand {
+        uv_command(
+            venv,
+            vec![
+                "pip".into(),
+                "install".into(),
+                "--python".into(),
+                path_string(get_python_path(venv)),
+                "-r".into(),
+                path_string(requirements_path.to_path_buf()),
+            ],
+        )
+    }
+
     fn install_success_message(&self, package: &str) -> String {
         format!("uv installed {}", package)
     }
@@ -149,6 +270,10 @@ impl PackageManager for UvManager {
     fn update_success_message(&self, package: &str) -> String {
         format!("uv updated {}", package)
     }
+
+    fn freeze_failure_prefix(&self) -> &'static str {
+        "uv pip freeze failed"
+    }
 }
 
 pub fn manager_for_engine(engine: &str) -> Result<Box<dyn PackageManager>, String> {
@@ -159,6 +284,15 @@ pub fn manager_for_engine(engine: &str) -> Result<Box<dyn PackageManager>, Strin
             "{} environments are read-only in VOrchestra. Use the native manager for package changes.",
             other
         )),
+    }
+}
+
+pub fn pip_audit_install_hint_for_engine(engine: &str, python_path: &str) -> String {
+    match engine {
+        "uv" => format!("uv pip install --python \"{}\" pip-audit", python_path),
+        "conda" => "conda install -c conda-forge pip-audit".to_string(),
+        "pixi" => "pixi add pip-audit".to_string(),
+        _ => "pip install pip-audit".to_string(),
     }
 }
 

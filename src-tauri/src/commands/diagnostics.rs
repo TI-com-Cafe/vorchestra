@@ -10,6 +10,7 @@ use crate::helpers::{
 use crate::jobs::{
     cleanup_finished_jobs, create_background_job, set_job_status, snapshot_json, AppState,
 };
+use crate::package_managers::{manager_for_engine, pip_audit_install_hint_for_engine};
 use crate::types::{DeprecatedPackage, LicenseBucket, PackageMetadataAudit, SuspiciousPackage};
 use std::collections::BTreeMap;
 use std::fs;
@@ -32,12 +33,10 @@ pub fn start_diagnostics_job(
                 let manager = detect_manager_type(&venv);
                 let python = get_python_path(&venv);
 
-                let mut check_cmd = if manager == "uv" {
-                    let uv_path = get_manager_path("uv");
-                    let mut c = new_command(uv_path);
-                    c.env("UV_CACHE_DIR", uv_cache_dir_for(&venv));
-                    c.args(["pip", "check", "--python"]).arg(&python);
-                    c
+                let mut check_cmd = if matches!(manager.as_str(), "pip" | "uv") {
+                    manager_for_engine(&manager)?
+                        .check_command(&venv)
+                        .to_command()
                 } else {
                     let mut c = new_command(&python);
                     c.args(["-m", "pip", "check"]);
@@ -54,13 +53,10 @@ pub fn start_diagnostics_job(
                     stdout_or_stderr(&health_out)
                 };
 
-                let mut outdated_cmd = if manager == "uv" {
-                    let uv_path = get_manager_path("uv");
-                    let mut c = new_command(uv_path);
-                    c.env("UV_CACHE_DIR", uv_cache_dir_for(&venv));
-                    c.args(["pip", "list", "--outdated", "--format", "json", "--python"])
-                        .arg(&python);
-                    c
+                let mut outdated_cmd = if matches!(manager.as_str(), "pip" | "uv") {
+                    manager_for_engine(&manager)?
+                        .outdated_command(&venv)
+                        .to_command()
                 } else {
                     let mut c = new_command(&python);
                     c.args(["-m", "pip", "list", "--outdated", "--format=json"]);
@@ -151,13 +147,13 @@ pub fn start_security_audit_job(
                             } else {
                                 Err(format!(
                                     "pip-audit not installed in this environment. Install with: {}",
-                                    pip_audit_install_hint(&manager, &python_str)
+                                    pip_audit_install_hint_for_engine(&manager, &python_str)
                                 ))
                             }
                         } else {
                             Err(format!(
                                 "pip-audit not installed in this environment. Install with: {}",
-                                pip_audit_install_hint(&manager, &python_str)
+                                pip_audit_install_hint_for_engine(&manager, &python_str)
                             ))
                         }
                     } else if !out.stdout.is_empty() {
@@ -178,15 +174,6 @@ pub fn start_security_audit_job(
         }
     });
     Ok(job_id)
-}
-
-fn pip_audit_install_hint(manager: &str, python_path: &str) -> String {
-    match manager {
-        "uv" => format!("uv pip install --python \"{}\" pip-audit", python_path),
-        "conda" => "conda install -c conda-forge pip-audit".to_string(),
-        "pixi" => "pixi add pip-audit".to_string(),
-        _ => "pip install pip-audit".to_string(),
-    }
 }
 
 fn diagnostics_tool_failure_hint(manager: &str, raw_error: &str) -> String {
@@ -513,19 +500,19 @@ mod tests {
     #[test]
     fn pip_audit_hint_matches_environment_manager() {
         assert_eq!(
-            pip_audit_install_hint("pip", "/venv/bin/python"),
+            pip_audit_install_hint_for_engine("pip", "/venv/bin/python"),
             "pip install pip-audit"
         );
         assert_eq!(
-            pip_audit_install_hint("uv", "/venv/bin/python"),
+            pip_audit_install_hint_for_engine("uv", "/venv/bin/python"),
             "uv pip install --python \"/venv/bin/python\" pip-audit"
         );
         assert_eq!(
-            pip_audit_install_hint("conda", "/venv/bin/python"),
+            pip_audit_install_hint_for_engine("conda", "/venv/bin/python"),
             "conda install -c conda-forge pip-audit"
         );
         assert_eq!(
-            pip_audit_install_hint("pixi", "/venv/bin/python"),
+            pip_audit_install_hint_for_engine("pixi", "/venv/bin/python"),
             "pixi add pip-audit"
         );
     }
