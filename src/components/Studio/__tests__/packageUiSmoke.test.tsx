@@ -148,6 +148,46 @@ describe("Studio package UI smoke tests", () => {
     expect(filtered[0].dependencies[0].dependencies[0].package_name).toBe("typing-extensions");
   });
 
+  it("keeps a matched graph hub with its subtree for focused inspection", () => {
+    const graph = [
+      {
+        package_name: "fastapi",
+        installed_version: "0.115.0",
+        dependencies: [
+          { package_name: "starlette", installed_version: "0.40.0", dependencies: [] },
+          { package_name: "pydantic", installed_version: "2.10.0", dependencies: [] }
+        ]
+      }
+    ];
+
+    const filtered = filterGraphDataForQuery(graph, "fastapi");
+
+    expect(filtered).toHaveLength(1);
+    expect(filtered[0].package_name).toBe("fastapi");
+    expect(filtered[0].dependencies).toHaveLength(2);
+  });
+
+  it("can lay out dependency graph roots only", () => {
+    const graph = [
+      {
+        package_name: "fastapi",
+        installed_version: "0.115.0",
+        dependencies: [{ package_name: "starlette", installed_version: "0.40.0", dependencies: [] }]
+      },
+      {
+        package_name: "pytest",
+        installed_version: "8.0.0",
+        dependencies: [{ package_name: "pluggy", installed_version: "1.5.0", dependencies: [] }]
+      }
+    ];
+
+    const layout = layoutDependencyGraph(graph, 0);
+
+    expect(layout.nodes.map(node => node.name)).toEqual(["fastapi", "pytest"]);
+    expect(layout.edges).toHaveLength(0);
+    expect(layout.truncated).toBe(false);
+  });
+
   it("lays out dependency graph leaves without horizontal overlap", () => {
     const graph = [
       {

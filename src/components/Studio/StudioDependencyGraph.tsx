@@ -272,13 +272,13 @@ export const StudioDependencyGraph: React.FC<StudioDependencyGraphProps> = ({ ve
             </button>
         </div>
         <div className="vo-subpanel flex p-0.5 rounded-lg border">
-            {[1, 2, 3].map(d => (
+            {[0, 1, 2, 3].map(d => (
                 <button 
                     key={d} 
                     onClick={() => setMaxDepth(d)} 
                     className={`px-4 py-1 rounded-md text-[9px] font-black transition-all ${maxDepth === d ? "bg-white dark:bg-slate-700 text-blue-600 shadow-sm" : "text-slate-400 hover:text-slate-600"}`}
                 >
-                    Level {d}
+                    {d === 0 ? "Top only" : `Level ${d}`}
                 </button>
             ))}
             <button onClick={() => setMaxDepth(99)} className={`px-4 py-1 rounded-md text-[9px] font-black transition-all ${maxDepth === 99 ? "bg-red-600 text-white" : "text-slate-400"}`}>Full capped</button>
@@ -307,9 +307,14 @@ export const StudioDependencyGraph: React.FC<StudioDependencyGraphProps> = ({ ve
           <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Dependency hubs</p>
           <div className="mt-2 flex flex-wrap gap-2">
             {graphSummary.hubs.map(hub => (
-              <span key={hub.name} className="rounded-full bg-blue-50 dark:bg-blue-950/30 px-3 py-1 text-[10px] font-bold text-blue-700 dark:text-blue-300">
+              <button
+                key={hub.name}
+                onClick={() => setGraphQuery(hub.name)}
+                className="rounded-full bg-blue-50 dark:bg-blue-950/30 px-3 py-1 text-[10px] font-bold text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/40"
+                title={`Focus graph on ${hub.name}`}
+              >
                 {hub.name} · {hub.dependencyCount}
-              </span>
+              </button>
             ))}
           </div>
         </div>
