@@ -1,6 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" role="img" aria-label="VOrchestra mark">
-  <rect width="96" height="96" rx="22" fill="#1f1f1f"/>
-  <path d="M18 22l19 54h14l27-54H61L45 56 34 22H18z" fill="#66d9ef"/>
-  <path d="M58 53c9 0 16 5 16 12s-7 12-16 12-16-5-16-12 7-12 16-12zm0 8c-4 0-7 2-7 4s3 4 7 4 7-2 7-4-3-4-7-4z" fill="#a6e22e"/>
-  <path d="M68 18l8 8-8 8-8-8 8-8z" fill="#fd971f"/>
-</svg>
