@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { act, renderHook, waitFor } from "@testing-library/react";
-import { usePyPIExplorerController } from "../usePyPIExplorerController";
+import { summarizeInstallImpact, usePyPIExplorerController } from "../usePyPIExplorerController";
 import { useStudioPackagesController } from "../useStudioPackagesController";
 import { VenvInfo, VenvDetails } from "../../../types";
 
@@ -82,6 +82,54 @@ describe("usePyPIExplorerController", () => {
     expect(waitForBackgroundJobMock).toHaveBeenCalledWith("job-search");
     expect(result.current.result?.info.name).toBe("fastapi");
     expect(result.current.selectedVersion).toBe("0.115.0");
+  });
+
+  it("summarizes dry-run install impact from resolver output", () => {
+    const summary = summarizeInstallImpact(`
+Would install anyio-4.8.0 fastapi-0.115.0 starlette-0.45.0
+Would uninstall oldlib-1.0.0
+Would upgrade pydantic-2.8.0
+`);
+
+    expect(summary.installs).toEqual(["anyio-4.8.0", "fastapi-0.115.0", "starlette-0.45.0"]);
+    expect(summary.uninstalls).toEqual(["oldlib-1.0.0"]);
+    expect(summary.upgrades).toEqual(["pydantic-2.8.0"]);
+  });
+
+  it("stores install impact after compatibility dry-run", async () => {
+    const setMessage = vi.fn();
+    invokeMock.mockImplementation(async (command: string) => {
+      if (command === "start_search_pypi_job") return "job-search";
+      if (command === "start_check_install_conflicts_job") return "job-conflict";
+      return "job-unknown";
+    });
+    waitForBackgroundJobMock.mockImplementation(async (jobId: string) => {
+      if (jobId === "job-search") {
+        return {
+          info: { name: "fastapi", version: "0.115.0", summary: "API", home_page: "", author: "" },
+          version_list: ["0.115.0"]
+        };
+      }
+      if (jobId === "job-conflict") return "Would install anyio-4.8.0 fastapi-0.115.0";
+      return null;
+    });
+    const { result } = renderHook(() => usePyPIExplorerController({ venv, onInstalled: vi.fn(), setMessage }));
+
+    act(() => result.current.setQuery("fastapi"));
+    await act(async () => {
+      await result.current.handlePypiSearch({ preventDefault: vi.fn() } as unknown as React.FormEvent);
+    });
+    await act(async () => {
+      await result.current.checkConflicts();
+    });
+
+    expect(result.current.installImpact?.installs).toEqual(["anyio-4.8.0", "fastapi-0.115.0"]);
+    expect(result.current.isCompatible).toBe(true);
+    expect(invokeMock).toHaveBeenCalledWith("start_check_install_conflicts_job", {
+      venvPath: venv.path,
+      package: "fastapi==0.115.0",
+      engine: "uv"
+    });
   });
 
   it("cancels an active PyPI search job", async () => {

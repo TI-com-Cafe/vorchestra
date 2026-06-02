@@ -14,6 +14,12 @@ export interface PyPIResult {
 export type PyPISourceTab = "pypi" | "git" | "url" | "file" | "project";
 
 type InstallOpts = { indexUrl?: string; extraIndexUrl?: string; editable?: boolean };
+export type InstallImpactSummary = {
+  installs: string[];
+  uninstalls: string[];
+  upgrades: string[];
+  raw: string;
+};
 
 interface UsePyPIExplorerControllerParams {
   venv: VenvInfo;
@@ -23,6 +29,27 @@ interface UsePyPIExplorerControllerParams {
 
 export const TEST_PYPI_INDEX = "https://test.pypi.org/simple/";
 export const isWindows = typeof navigator !== "undefined" && /windows/i.test(navigator.userAgent);
+
+const parseDryRunItems = (raw: string, label: string): string[] => {
+  const escaped = label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const match = raw.match(new RegExp(`(?:^|\\n)\\s*Would ${escaped}\\s+(.+?)(?=\\n\\s*Would |\\n\\s*$|$)`, "is"));
+  if (!match) return [];
+  return match[1]
+    .replace(/\s+/g, " ")
+    .trim()
+    .split(" ")
+    .filter(Boolean);
+};
+
+export const summarizeInstallImpact = (raw: string): InstallImpactSummary => ({
+  installs: parseDryRunItems(raw, "install"),
+  uninstalls: parseDryRunItems(raw, "uninstall"),
+  upgrades: [
+    ...parseDryRunItems(raw, "upgrade"),
+    ...parseDryRunItems(raw, "update")
+  ],
+  raw
+});
 
 export function usePyPIExplorerController({ venv, onInstalled, setMessage }: UsePyPIExplorerControllerParams) {
   const [tab, setTab] = useState<PyPISourceTab>("pypi");
@@ -40,6 +67,7 @@ export function usePyPIExplorerController({ venv, onInstalled, setMessage }: Use
   const [checkingConflicts, setCheckingConflicts] = useState(false);
   const [conflictReport, setConflictReport] = useState<string | null>(null);
   const [isCompatible, setIsCompatible] = useState<boolean | null>(null);
+  const [installImpact, setInstallImpact] = useState<InstallImpactSummary | null>(null);
   const conflictJobRef = useRef<string | null>(null);
   const searchJobRef = useRef<string | null>(null);
   const searchRequestRef = useRef(0);
@@ -61,6 +89,7 @@ export function usePyPIExplorerController({ venv, onInstalled, setMessage }: Use
   const resetCompatibility = () => {
     setIsCompatible(null);
     setConflictReport(null);
+    setInstallImpact(null);
   };
 
   const runInstall = async (pkg: string, opts: InstallOpts, label: string) => {
@@ -177,11 +206,13 @@ export function usePyPIExplorerController({ venv, onInstalled, setMessage }: Use
       conflictJobRef.current = jobId;
       const report = await waitForBackgroundJob<string>(jobId);
       setConflictReport(report);
+      setInstallImpact(summarizeInstallImpact(report));
       const lower = report.toLowerCase();
       setIsCompatible(!(lower.includes("conflict") || lower.includes("error:") || lower.includes("incompatible")));
     } catch (err) {
       setConflictReport(`Check failed: ${err}`);
       setIsCompatible(false);
+      setInstallImpact(null);
     } finally {
       conflictJobRef.current = null;
       setCheckingConflicts(false);
@@ -196,6 +227,7 @@ export function usePyPIExplorerController({ venv, onInstalled, setMessage }: Use
       await invoke<boolean>("cancel_background_job", { jobId });
       setConflictReport("Compatibility check cancelled.");
       setIsCompatible(null);
+      setInstallImpact(null);
     } catch (err) {
       setMessage(`Cancel failed: ${err}`);
     } finally {
@@ -269,6 +301,7 @@ export function usePyPIExplorerController({ venv, onInstalled, setMessage }: Use
     checkingConflicts,
     conflictReport,
     isCompatible,
+    installImpact,
     gitUrl,
     setGitUrl,
     gitRef,

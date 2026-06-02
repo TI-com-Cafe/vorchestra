@@ -50,6 +50,25 @@ const SOURCE_GUIDANCE: Record<PyPISourceTab, { title: string; detail: string }> 
   }
 };
 
+const IMPACT_TONES = {
+  green: "border-emerald-200 bg-emerald-50/80 text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-950/20 dark:text-emerald-300",
+  blue: "border-blue-200 bg-blue-50/80 text-blue-700 dark:border-blue-900/40 dark:bg-blue-950/20 dark:text-blue-300",
+  red: "border-red-200 bg-red-50/80 text-red-700 dark:border-red-900/40 dark:bg-red-950/20 dark:text-red-300"
+};
+
+const ImpactBucket: React.FC<{ label: string; items: string[]; tone: keyof typeof IMPACT_TONES }> = ({ label, items, tone }) => (
+  <div className={cn("rounded-xl border px-3 py-2", IMPACT_TONES[tone])}>
+    <p className="text-[9px] font-black uppercase tracking-widest">{label}</p>
+    {items.length > 0 ? (
+      <p className="mt-1 text-[10px] font-mono leading-relaxed break-words">
+        {items.slice(0, 8).join(", ")}{items.length > 8 ? `, +${items.length - 8} more` : ""}
+      </p>
+    ) : (
+      <p className="mt-1 text-[10px] font-bold opacity-60">No changes</p>
+    )}
+  </div>
+);
+
 export const PyPIExplorer: React.FC<PyPIExplorerProps> = ({ venv, onClose, onInstalled, setMessage }) => {
   const c = usePyPIExplorerController({ venv, onInstalled, setMessage });
   const guidance = SOURCE_GUIDANCE[c.tab];
@@ -189,13 +208,27 @@ export const PyPIExplorer: React.FC<PyPIExplorerProps> = ({ venv, onClose, onIns
                     c.isCompatible ? "bg-green-50 border-green-200 text-green-700" : "bg-red-50 border-red-200 text-red-700"
                   )}>
                     {c.isCompatible ? <Check size={20} className="shrink-0" /> : <AlertCircle size={20} className="shrink-0" />}
-                    <div className="space-y-1">
+                    <div className="space-y-3 min-w-0 flex-1">
                       <p className="text-xs font-black uppercase tracking-widest">
                         {c.isCompatible ? "Compatible Environment" : "Potential Conflicts Detected"}
                       </p>
-                      <p className="text-[10px] font-medium leading-relaxed opacity-80 whitespace-pre-wrap font-mono max-h-32 overflow-y-auto">
-                        {c.isCompatible ? "No direct dependency conflicts found with the current environment packages." : c.conflictReport || "This version may cause issues with your existing dependencies."}
-                      </p>
+                      {c.installImpact && (
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                          <ImpactBucket label="Would install" items={c.installImpact.installs} tone="green" />
+                          <ImpactBucket label="Would upgrade" items={c.installImpact.upgrades} tone="blue" />
+                          <ImpactBucket label="Would remove" items={c.installImpact.uninstalls} tone="red" />
+                        </div>
+                      )}
+                      {c.installImpact && c.installImpact.installs.length + c.installImpact.upgrades.length + c.installImpact.uninstalls.length === 0 ? (
+                        <p className="text-[10px] font-bold uppercase tracking-widest opacity-80">
+                          Dry-run completed, but no package delta was reported by the resolver.
+                        </p>
+                      ) : null}
+                      {!c.isCompatible && (
+                        <p className="text-[10px] font-medium leading-relaxed opacity-80 whitespace-pre-wrap font-mono max-h-32 overflow-y-auto">
+                          {c.conflictReport || "This version may cause issues with your existing dependencies."}
+                        </p>
+                      )}
                     </div>
                   </div>
                 )}
