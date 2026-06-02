@@ -3,10 +3,12 @@
 
 use crate::helpers::{
     canonicalize_dir, default_python_command, ensure_venv_dir, exe_name, get_manager_path,
-    get_python_path, get_venv_info, new_command, run_command_with_timeout_and_cancel,
+    get_python_path, get_venv_info, new_command, run_command_with_timeout_cancel_and_output,
     scan_max_depth,
 };
-use crate::jobs::{create_background_job, set_job_progress, set_job_status, AppState};
+use crate::jobs::{
+    append_job_log, create_background_job, set_job_progress, set_job_status, AppState,
+};
 use crate::types::{AuditReport, ToolRunResult, VenvInfo};
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
@@ -167,7 +169,12 @@ fn run_in_venv_job(
         cmd.arg(a);
     }
     set_job_progress(job, format!("Running {}...", program), Some(0.35));
-    let out = run_command_with_timeout_and_cancel(&mut cmd, timeout, job.cancel.as_ref())?;
+    let out = run_command_with_timeout_cancel_and_output(
+        &mut cmd,
+        timeout,
+        job.cancel.as_ref(),
+        |stream, line| append_job_log(job, stream, line),
+    )?;
     set_job_progress(job, format!("{} finished.", program), Some(0.95));
     Ok(ToolRunResult {
         stdout: String::from_utf8_lossy(&out.stdout).to_string(),
@@ -297,7 +304,12 @@ fn run_uv_project_job(
     }
 
     set_job_progress(job, format!("Running uv {}...", action), Some(0.35));
-    let out = run_command_with_timeout_and_cancel(&mut cmd, timeout, job.cancel.as_ref())?;
+    let out = run_command_with_timeout_cancel_and_output(
+        &mut cmd,
+        timeout,
+        job.cancel.as_ref(),
+        |stream, line| append_job_log(job, stream, line),
+    )?;
     set_job_progress(job, "uv command finished.", Some(0.95));
     Ok(ToolRunResult {
         stdout: String::from_utf8_lossy(&out.stdout).to_string(),
@@ -348,7 +360,12 @@ fn run_venv_script_job(
     let mut cmd = new_command(python);
     cmd.arg("-c").arg(&command);
     set_job_progress(job, "Running Python snippet...", Some(0.35));
-    let out = run_command_with_timeout_and_cancel(&mut cmd, 120, job.cancel.as_ref())?;
+    let out = run_command_with_timeout_cancel_and_output(
+        &mut cmd,
+        120,
+        job.cancel.as_ref(),
+        |stream, line| append_job_log(job, stream, line),
+    )?;
     if out.status.success() {
         set_job_progress(job, "Python snippet finished.", Some(0.95));
         Ok(String::from_utf8_lossy(&out.stdout).to_string())

@@ -75,6 +75,7 @@ interface ToolState {
   needsElevationFor: string | null;
   jobId: string | null;
   progress: string | null;
+  logs: string[];
 }
 
 interface ScriptRunState {
@@ -83,6 +84,7 @@ interface ScriptRunState {
   progress: string | null;
   output: string | null;
   error: string | null;
+  logs: string[];
 }
 
 const initialToolState: ToolState = {
@@ -92,7 +94,8 @@ const initialToolState: ToolState = {
   installError: null,
   needsElevationFor: null,
   jobId: null,
-  progress: null
+  progress: null,
+  logs: []
 };
 
 const initialScriptRunState: ScriptRunState = {
@@ -100,7 +103,8 @@ const initialScriptRunState: ScriptRunState = {
   jobId: null,
   progress: null,
   output: null,
-  error: null
+  error: null,
+  logs: []
 };
 
 const pytestSummary = (output: string): string | null => {
@@ -190,6 +194,15 @@ export const parseAutomationArgs = (raw: string): string[] => {
   return args;
 };
 
+const LiveLogTail: React.FC<{ logs: string[] }> = ({ logs }) => {
+  if (logs.length === 0) return null;
+  return (
+    <pre className="vo-subpanel rounded-xl border p-2 text-[10px] font-mono max-h-28 overflow-auto whitespace-pre-wrap">
+      {logs.slice(-8).join("\n")}
+    </pre>
+  );
+};
+
 export const StudioAutomation: React.FC<StudioAutomationProps> = ({ venv, scripts, refreshScripts, setMessage }) => {
   const [scriptInput, setScriptInput] = useState({ name: "", command: "" });
   const [toolStates, setToolStates] = useState<Record<string, ToolState>>({});
@@ -217,7 +230,7 @@ export const StudioAutomation: React.FC<StudioAutomationProps> = ({ venv, script
   };
 
   const runTool = async (tool: QuickTool) => {
-    updateToolState(tool.id, { running: true, result: null, installError: null, progress: "Starting..." });
+    updateToolState(tool.id, { running: true, result: null, installError: null, progress: "Starting...", logs: [] });
     try {
       const args = parseAutomationArgs(argsByTool[tool.id] ?? "");
       const jobId = await invoke<string>("start_run_in_venv_job", {
@@ -228,11 +241,15 @@ export const StudioAutomation: React.FC<StudioAutomationProps> = ({ venv, script
       });
       updateToolState(tool.id, { jobId });
       const r = await waitForBackgroundJob<ToolRunResult>(jobId, (snapshot) => {
-        if (!snapshot.message) return;
+        const logs = snapshot.logs ?? [];
+        if (!snapshot.message && logs.length === 0) return;
         const pct = typeof snapshot.progress === "number"
           ? ` ${Math.round(snapshot.progress * 100)}%`
           : "";
-        updateToolState(tool.id, { progress: `${snapshot.message}${pct}` });
+        updateToolState(tool.id, {
+          progress: snapshot.message ? `${snapshot.message}${pct}` : null,
+          logs
+        });
       });
       updateToolState(tool.id, { result: r, running: false, jobId: null, progress: null });
     } catch (err) {
@@ -326,17 +343,22 @@ export const StudioAutomation: React.FC<StudioAutomationProps> = ({ venv, script
       jobId: null,
       progress: "Starting...",
       output: null,
-      error: null
+      error: null,
+      logs: []
     });
     try {
       const jobId = await invoke<string>("start_run_venv_script_job", { venvPath: venv.path, command: script.command });
       updateScriptRunState(script.id, { jobId });
       const out = await waitForBackgroundJob<string>(jobId, (snapshot) => {
-        if (!snapshot.message) return;
+        const logs = snapshot.logs ?? [];
+        if (!snapshot.message && logs.length === 0) return;
         const pct = typeof snapshot.progress === "number"
           ? ` ${Math.round(snapshot.progress * 100)}%`
           : "";
-        updateScriptRunState(script.id, { progress: `${snapshot.message}${pct}` });
+        updateScriptRunState(script.id, {
+          progress: snapshot.message ? `${snapshot.message}${pct}` : null,
+          logs
+        });
       });
       setMessage(`Output: ${out.substring(0, 100)}...`);
       updateScriptRunState(script.id, {
@@ -454,6 +476,7 @@ export const StudioAutomation: React.FC<StudioAutomationProps> = ({ venv, script
                     <span>{state.progress}</span>
                   </div>
                 )}
+                {state.running && <LiveLogTail logs={state.logs} />}
 
                 {r?.tool_missing && (
                   <div className="p-2.5 bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800/30 rounded-lg text-[10px] text-amber-700 dark:text-amber-300 flex items-center justify-between gap-2">
@@ -609,6 +632,7 @@ export const StudioAutomation: React.FC<StudioAutomationProps> = ({ venv, script
                     <span>{state.progress}</span>
                   </div>
                 )}
+                {state.running && <LiveLogTail logs={state.logs} />}
                 {state.output && (
                   <pre className="vo-subpanel text-[10px] font-mono p-2 rounded border max-h-32 overflow-auto whitespace-pre-wrap">
                     {state.output}

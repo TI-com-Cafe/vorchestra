@@ -8,7 +8,8 @@ pub use crate::dependency_tree::{
 };
 pub use crate::process_utils::{
     default_python_command, exe_name, new_command, run_command_with_timeout,
-    run_command_with_timeout_and_cancel, stdout_or_stderr,
+    run_command_with_timeout_and_cancel, run_command_with_timeout_cancel_and_output,
+    stdout_or_stderr,
 };
 pub use crate::python_parsers::{
     normalize_package_name, parse_outdated_packages_json, parse_pip_freeze,
