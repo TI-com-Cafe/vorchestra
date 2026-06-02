@@ -215,6 +215,17 @@ pub struct PolicyDecision {
     pub findings: Vec<PolicyFinding>,
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct ProjectSnapshotInfo {
+    pub id: String,
+    pub reason: String,
+    pub created_at_unix: u64,
+    pub project_root: String,
+    pub snapshot_path: String,
+    pub captured_files: Vec<String>,
+    pub freeze_file: Option<String>,
+}
+
 /// One row of a venv-to-venv comparison. `DriftKind` is reused with this
 /// mapping:
 ///   * `InSync`            -> both venvs have the same package & version

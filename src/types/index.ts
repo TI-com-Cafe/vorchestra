@@ -223,6 +223,16 @@ export interface PolicyDecision {
   findings: PolicyFinding[];
 }
 
+export interface ProjectSnapshotInfo {
+  id: string;
+  reason: string;
+  created_at_unix: number;
+  project_root: string;
+  snapshot_path: string;
+  captured_files: string[];
+  freeze_file: string | null;
+}
+
 export interface BundleManifest {
   format_version: number;
   venv_name: string;

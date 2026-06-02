@@ -650,6 +650,19 @@ pub fn start_rebuild_venv_from_project_job(
                 let python = infer_rebuild_python_bin(original, python_bin);
 
                 if original.exists() {
+                    let _ = crate::commands::snapshots::create_snapshot_for_venv(
+                        original,
+                        &engine,
+                        "before rebuild",
+                        Some(blocking_job.cancel.as_ref()),
+                    )
+                    .map(|info| {
+                        append_job_log(
+                            &blocking_job,
+                            "stdout",
+                            format!("Created rollback snapshot {}", info.id),
+                        )
+                    });
                     set_job_progress(
                         &blocking_job,
                         "Moving existing environment to recoverable trash...",

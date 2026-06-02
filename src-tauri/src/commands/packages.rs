@@ -61,6 +61,19 @@ pub fn start_install_dependency_job(
                 format!("Installing {}...", package),
                 Some(0.2),
             );
+            let _ = crate::commands::snapshots::create_snapshot_for_venv_path(
+                &venv_path,
+                &engine,
+                &format!("before install {}", package),
+                Some(blocking_job.cancel.as_ref()),
+            )
+            .map(|info| {
+                append_job_log(
+                    &blocking_job,
+                    "stdout",
+                    format!("Created rollback snapshot {}", info.id),
+                )
+            });
             install_dependency_with_cancel_and_output_internal(
                 venv_path,
                 package,
@@ -100,6 +113,19 @@ pub fn start_uninstall_package_job(
                 format!("Uninstalling {}...", package),
                 Some(0.2),
             );
+            let _ = crate::commands::snapshots::create_snapshot_for_venv_path(
+                &venv_path,
+                &engine,
+                &format!("before uninstall {}", package),
+                Some(blocking_job.cancel.as_ref()),
+            )
+            .map(|info| {
+                append_job_log(
+                    &blocking_job,
+                    "stdout",
+                    format!("Created rollback snapshot {}", info.id),
+                )
+            });
             uninstall_package_with_output_internal(
                 venv_path,
                 package,
@@ -134,6 +160,19 @@ pub fn start_update_package_job(
         let blocking_job = job.clone();
         let outcome = tauri::async_runtime::spawn_blocking(move || {
             set_job_progress(&blocking_job, format!("Updating {}...", package), Some(0.2));
+            let _ = crate::commands::snapshots::create_snapshot_for_venv_path(
+                &venv_path,
+                &engine,
+                &format!("before update {}", package),
+                Some(blocking_job.cancel.as_ref()),
+            )
+            .map(|info| {
+                append_job_log(
+                    &blocking_job,
+                    "stdout",
+                    format!("Created rollback snapshot {}", info.id),
+                )
+            });
             update_package_with_output_internal(
                 venv_path,
                 package,

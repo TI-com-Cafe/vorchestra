@@ -11,5 +11,6 @@ pub mod integrations_extra;
 pub mod lockfile;
 pub mod packages;
 pub mod project;
+pub mod snapshots;
 pub mod system;
 pub mod venv;

@@ -1,9 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { save as saveDialog } from "@tauri-apps/plugin-dialog";
-import { AlertTriangle, Box, CheckCircle2, Code2, Download, Loader2, Lock, RefreshCcw, ShieldCheck, Terminal, Trash2, TreePine, Wrench } from "lucide-react";
+import { AlertTriangle, Box, CheckCircle2, Code2, Download, History, Loader2, Lock, RefreshCcw, ShieldCheck, Terminal, Trash2, TreePine, Wrench } from "lucide-react";
 
-import { VenvInfo, StudioTabId, VscodeInterpreterStatus } from "../../types";
+import { VenvInfo, StudioTabId, VscodeInterpreterStatus, ProjectSnapshotInfo } from "../../types";
 import { assessEnvironmentHealth } from "../../utils/envHealth";
 import { packageService } from "../../services/packageManager";
 import { waitForBackgroundJob } from "../../services/backgroundJobs";
@@ -65,6 +65,9 @@ export const StudioRepair: React.FC<StudioRepairProps> = ({ venv, setStudioTab, 
   const [loadingRebuildPreview, setLoadingRebuildPreview] = useState(false);
   const [loadingVscodeStatus, setLoadingVscodeStatus] = useState(false);
   const [exportingSupport, setExportingSupport] = useState(false);
+  const [snapshots, setSnapshots] = useState<ProjectSnapshotInfo[]>([]);
+  const [loadingSnapshots, setLoadingSnapshots] = useState(false);
+  const [snapshotBusy, setSnapshotBusy] = useState(false);
   const health = assessEnvironmentHealth(venv);
   const readOnlyManager = isReadOnlyManager(venv.manager_type);
   const readOnlyManagerName = readOnlyManagerLabel(venv.manager_type);
@@ -118,6 +121,58 @@ export const StudioRepair: React.FC<StudioRepairProps> = ({ venv, setStudioTab, 
   useEffect(() => {
     void loadRebuildPreview();
   }, [loadRebuildPreview]);
+
+  const loadSnapshots = useCallback(async () => {
+    setLoadingSnapshots(true);
+    try {
+      const list = await invoke<ProjectSnapshotInfo[]>("list_project_snapshots", { venvPath: venv.path });
+      setSnapshots(list);
+    } catch (err) {
+      setMessage(`Could not list snapshots: ${err}`);
+    } finally {
+      setLoadingSnapshots(false);
+    }
+  }, [setMessage, venv.path]);
+
+  useEffect(() => {
+    void loadSnapshots();
+  }, [loadSnapshots]);
+
+  const createManualSnapshot = async () => {
+    setSnapshotBusy(true);
+    try {
+      const jobId = await invoke<string>("start_create_project_snapshot_job", {
+        venvPath: venv.path,
+        reason: "manual"
+      });
+      const info = await waitForBackgroundJob<ProjectSnapshotInfo>(jobId);
+      setMessage(`Snapshot created: ${info.id}`);
+      await loadSnapshots();
+    } catch (err) {
+      setMessage(`Snapshot failed: ${err}`);
+    } finally {
+      setSnapshotBusy(false);
+    }
+  };
+
+  const restoreSnapshot = async (snapshot: ProjectSnapshotInfo) => {
+    setSnapshotBusy(true);
+    try {
+      const jobId = await invoke<string>("start_restore_project_snapshot_job", {
+        venvPath: venv.path,
+        snapshotId: snapshot.id
+      });
+      const out = await waitForBackgroundJob<string>(jobId);
+      setMessage(out);
+      await onSync(venv.path);
+      await loadSnapshots();
+      reloadStudio(venv);
+    } catch (err) {
+      setMessage(`Snapshot restore failed: ${err}`);
+    } finally {
+      setSnapshotBusy(false);
+    }
+  };
 
   const runStep = async (step: RepairStep) => {
     setBusyStep(step.id);
@@ -442,6 +497,15 @@ export const StudioRepair: React.FC<StudioRepairProps> = ({ venv, setStudioTab, 
           onRefresh={loadRebuildPreview}
         />
 
+        <SnapshotRollbackCard
+          snapshots={snapshots}
+          loading={loadingSnapshots}
+          busy={snapshotBusy}
+          onRefresh={loadSnapshots}
+          onCreate={createManualSnapshot}
+          onRestore={restoreSnapshot}
+        />
+
         {readOnlyManager && (
           <NativeManagerRepairCard managerName={readOnlyManagerName} manager={venv.manager_type} />
         )}
@@ -628,9 +692,102 @@ const RebuildSourceCard: React.FC<{
       <p className="mt-3 rounded-2xl bg-amber-50 dark:bg-amber-950/20 px-4 py-3 text-[10px] font-bold text-amber-700 dark:text-amber-300">
         {preview.note}
       </p>
-    )}
-  </section>
+  )}
+</section>
 );
+
+const SnapshotRollbackCard: React.FC<{
+  snapshots: ProjectSnapshotInfo[];
+  loading: boolean;
+  busy: boolean;
+  onRefresh: () => void;
+  onCreate: () => void;
+  onRestore: (snapshot: ProjectSnapshotInfo) => void;
+}> = ({ snapshots, loading, busy, onRefresh, onCreate, onRestore }) => {
+  const latest = snapshots[0] ?? null;
+  const formatSnapshotTime = (unix: number) =>
+    new Date(unix * 1000).toLocaleString(undefined, {
+      month: "short",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit"
+    });
+
+  return (
+    <section className="vo-surface rounded-[1.5rem] border p-5 shadow-sm">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <History size={16} className="text-blue-600" />
+            <h3 className="text-xs font-black uppercase tracking-widest">Snapshots & Rollback</h3>
+            {loading && <Loader2 size={13} className="animate-spin text-blue-600" />}
+          </div>
+          <p className="mt-2 text-[10px] text-slate-500 dark:text-slate-400">
+            VOrchestra snapshots project manifests, lockfiles and a freeze file before package mutations and rebuilds. Restore puts project files back and re-installs the frozen package set when available.
+          </p>
+        </div>
+        <div className="flex gap-2 shrink-0">
+          <button
+            onClick={onRefresh}
+            disabled={loading || busy}
+            className="vo-secondary-action px-3 py-1.5 rounded-xl disabled:opacity-50 text-[9px]"
+          >
+            Refresh
+          </button>
+          <button
+            onClick={onCreate}
+            disabled={loading || busy}
+            className="vo-primary-action px-3 py-1.5 rounded-xl disabled:bg-slate-300 text-[9px]"
+          >
+            {busy ? "Working..." : "Create snapshot"}
+          </button>
+        </div>
+      </div>
+
+      {latest ? (
+        <div className="mt-4 grid grid-cols-1 gap-2">
+          {snapshots.slice(0, 3).map(snapshot => (
+            <div key={snapshot.id} className="vo-panel rounded-2xl border px-4 py-3">
+              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <div className="min-w-0">
+                  <p className="text-[10px] font-black font-mono truncate">{snapshot.id}</p>
+                  <p className="mt-1 text-[9px] font-bold uppercase tracking-widest text-slate-400">
+                    {formatSnapshotTime(snapshot.created_at_unix)} · {snapshot.reason}
+                  </p>
+                  <p className="mt-1 text-[9px] text-slate-500 dark:text-slate-400">
+                    {snapshot.captured_files.length} project file{snapshot.captured_files.length === 1 ? "" : "s"}
+                    {snapshot.freeze_file ? " plus package freeze" : ""}
+                  </p>
+                </div>
+                <button
+                  onClick={() => onRestore(snapshot)}
+                  disabled={busy || loading}
+                  className="vo-secondary-action px-3 py-1.5 rounded-xl text-[9px] disabled:opacity-50"
+                >
+                  Restore
+                </button>
+              </div>
+            </div>
+          ))}
+          {snapshots.length > 3 && (
+            <p className="text-[9px] font-bold text-slate-400">
+              {snapshots.length - 3} older snapshot{snapshots.length - 3 === 1 ? "" : "s"} hidden.
+            </p>
+          )}
+        </div>
+      ) : (
+        <div className="mt-4 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 px-4 py-5 text-center">
+          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+            No snapshots yet
+          </p>
+          <p className="mt-1 text-[9px] text-slate-500 dark:text-slate-400">
+            Create one manually or run a package operation to generate the first rollback point.
+          </p>
+        </div>
+      )}
+    </section>
+  );
+};
 
 const RepairSequenceCard: React.FC<{
   recommendedSteps: RepairStep[];

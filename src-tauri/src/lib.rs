@@ -119,6 +119,10 @@ pub fn run() {
             commands::lockfile::start_generate_lockfile_job,
             commands::lockfile::start_restore_from_lockfile_job,
             commands::lockfile::start_compute_lockfile_drift_job,
+            // Project snapshots / rollback
+            commands::snapshots::list_project_snapshots,
+            commands::snapshots::start_create_project_snapshot_job,
+            commands::snapshots::start_restore_project_snapshot_job,
             // Project autodetect
             commands::project::start_detect_project_manifests_job,
             // Cache hygiene
