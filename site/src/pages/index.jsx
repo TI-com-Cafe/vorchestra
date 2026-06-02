@@ -34,6 +34,29 @@ const screenshots = [
   {src: '/vorchestra/img/screenshots/vorchestra-3.png', title: 'Library manifest'},
 ];
 
+const docPaths = [
+  {
+    title: 'Install and start',
+    text: 'Download the pre-release build, run from source, add your first workspace and scan safely.',
+    to: '/docs/start/installation',
+  },
+  {
+    title: 'Operate the product',
+    text: 'Follow complete workflows for inventory, creation, repair, cleanup, package risk and project setup.',
+    to: '/docs/product/workflows',
+  },
+  {
+    title: 'Troubleshoot issues',
+    text: 'Resolve database locks, package catalog loops, missing helper tools, uv errors and offline behavior.',
+    to: '/docs/reference/troubleshooting',
+  },
+  {
+    title: 'Understand the architecture',
+    text: 'Review the C4 model, background jobs, command surface and contribution patterns.',
+    to: '/docs/reference/c4-model',
+  },
+];
+
 function FeatureGrid() {
   return (
     <div className="featureGrid">
@@ -66,14 +89,14 @@ export default function Home() {
               diagnostics, repair, cleanup, security, dependency analysis and project operations.
             </p>
             <div className="heroActions">
-              <Link className="voButton voButtonPrimary" to="/docs/start/quickstart">
-                Start in 5 minutes
+              <Link className="voButton voButtonPrimary" to="/docs/start/installation">
+                Install VOrchestra
               </Link>
-              <Link className="voButton voButtonSecondary" to="/docs/product/overview">
-                Explore product
+              <Link className="voButton voButtonSecondary" to="/docs/start/quickstart">
+                Quick start
               </Link>
-              <Link className="voButton voButtonSecondary" to="/docs/community/roadmap">
-                Open roadmap
+              <Link className="voButton voButtonSecondary" to="/docs/product/workflows">
+                User workflows
               </Link>
             </div>
           </div>
@@ -116,6 +139,27 @@ export default function Home() {
           </div>
         </section>
 
+        <section className="sectionBlock sectionBlockTight">
+          <div className="container">
+            <div className="sectionHeading">
+              <p className="eyebrow">Official documentation</p>
+              <h2>Start with the path that matches what you need to do.</h2>
+              <p>
+                The docs are organized for users first: install, first scan, practical workflows,
+                troubleshooting and only then deeper architecture and contribution details.
+              </p>
+            </div>
+            <div className="docPathGrid">
+              {docPaths.map((path) => (
+                <Link className="docPathCard" key={path.title} to={path.to}>
+                  <span>{path.title}</span>
+                  <p>{path.text}</p>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+
         <section className="sectionBlock">
           <div className="container">
             <div className="sectionHeading">
@@ -148,6 +192,9 @@ export default function Home() {
                 </Link>
                 <Link className="voButton voButtonSecondary" to="/docs/product/disk-cleanup">
                   Open cleanup docs
+                </Link>
+                <Link className="voButton voButtonSecondary" to="/docs/reference/faq">
+                  Read FAQ
                 </Link>
               </div>
             </div>

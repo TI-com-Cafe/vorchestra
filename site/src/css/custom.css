@@ -340,7 +340,8 @@ body {
 
 .featureGrid,
 .workflow-grid,
-.doc-card-grid {
+.doc-card-grid,
+.docPathGrid {
   display: grid;
   gap: 1rem;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -348,7 +349,8 @@ body {
 
 .featureCard,
 .doc-card,
-.workflow-card {
+.workflow-card,
+.docPathCard {
   min-height: 10rem;
   padding: 1.35rem;
 }
@@ -359,6 +361,41 @@ body {
   font-family: var(--ifm-font-family-base);
   font-size: 1.08rem;
   letter-spacing: -0.02em;
+}
+
+.docPathGrid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.docPathCard {
+  background: linear-gradient(145deg, var(--vo-panel), var(--vo-panel-strong));
+  border: 1px solid var(--vo-border);
+  border-radius: 0.8rem;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.1);
+  color: var(--vo-ink);
+  display: block;
+  text-decoration: none;
+}
+
+.docPathCard:hover {
+  color: var(--vo-cyan);
+  text-decoration: none;
+  transform: translateY(-2px);
+}
+
+.docPathCard span {
+  display: block;
+  font-size: 1.02rem;
+  font-weight: 950;
+  letter-spacing: -0.025em;
+  margin-bottom: 0.55rem;
+}
+
+.docPathCard p {
+  color: var(--vo-muted);
+  font-size: 0.92rem;
+  line-height: 1.55;
+  margin: 0;
 }
 
 .calloutPanel {
@@ -373,7 +410,8 @@ body {
   .heroGrid,
   .featureGrid,
   .workflow-grid,
-  .doc-card-grid {
+  .doc-card-grid,
+  .docPathGrid {
     grid-template-columns: 1fr;
   }
 
