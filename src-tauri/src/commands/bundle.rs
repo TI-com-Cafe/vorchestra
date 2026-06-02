@@ -12,10 +12,11 @@
 use crate::commands::venv::create_venv_internal;
 use crate::helpers::{
     canonicalize_dir, classify_install_error, detect_manager_type, ensure_venv_dir,
-    get_manager_path, get_python_path, new_command, run_command_with_timeout,
-    run_command_with_timeout_and_cancel, stdout_or_stderr, uv_cache_dir_for,
+    get_python_path, new_command, run_command_with_timeout, run_command_with_timeout_and_cancel,
+    stdout_or_stderr,
 };
 use crate::jobs::{create_background_job, set_job_progress, set_job_status, AppState};
+use crate::package_managers::manager_for_engine;
 use crate::types::BundleManifest;
 use std::fs::{self, File};
 use std::io::{Read, Write};
@@ -36,32 +37,17 @@ fn now_unix() -> u64 {
 }
 
 fn freeze(venv: &Path, engine: &str) -> Result<String, String> {
-    if engine == "uv" {
-        let uv_path = get_manager_path("uv");
-        let python = get_python_path(venv);
-        let mut cmd = new_command(uv_path);
-        cmd.env("UV_CACHE_DIR", uv_cache_dir_for(venv));
-        cmd.args(["pip", "freeze", "--python"]).arg(&python);
-        let out = run_command_with_timeout(&mut cmd, 60)?;
-        if !out.status.success() {
-            return Err(format!(
-                "uv pip freeze failed: {}",
-                stdout_or_stderr(&out).trim()
-            ));
-        }
+    let manager = manager_for_engine(engine)?;
+    let mut cmd = manager.freeze_command(venv).to_command();
+    let out = run_command_with_timeout(&mut cmd, 60)?;
+    if out.status.success() {
         Ok(String::from_utf8_lossy(&out.stdout).to_string())
     } else {
-        let python = get_python_path(venv);
-        let mut cmd = new_command(python);
-        cmd.args(["-m", "pip", "freeze"]);
-        let out = run_command_with_timeout(&mut cmd, 60)?;
-        if !out.status.success() {
-            return Err(format!(
-                "pip freeze failed: {}",
-                stdout_or_stderr(&out).trim()
-            ));
-        }
-        Ok(String::from_utf8_lossy(&out.stdout).to_string())
+        Err(format!(
+            "{}: {}",
+            manager.freeze_failure_prefix(),
+            stdout_or_stderr(&out).trim()
+        ))
     }
 }
 
@@ -258,22 +244,12 @@ pub fn start_import_venv_bundle_job(
                 .map_err(|e| format!("Failed to stage requirements: {}", e))?;
 
             set_job_progress(&blocking_job, "Installing bundled packages...", Some(0.6));
-            let install_result = if manifest.engine == "uv" {
-                let uv_path = get_manager_path("uv");
-                let new_python = get_python_path(&venv);
-                let mut cmd = new_command(uv_path);
-                cmd.env("UV_CACHE_DIR", uv_cache_dir_for(&venv));
-                cmd.args(["pip", "install", "--python"])
-                    .arg(&new_python)
-                    .arg("-r")
-                    .arg(&staged);
-                run_command_with_timeout_and_cancel(&mut cmd, 600, blocking_job.cancel.as_ref())
-            } else {
-                let python = get_python_path(&venv);
-                let mut cmd = new_command(python);
-                cmd.args(["-m", "pip", "install", "-r"]).arg(&staged);
-                run_command_with_timeout_and_cancel(&mut cmd, 600, blocking_job.cancel.as_ref())
-            };
+            let manager = manager_for_engine(&manifest.engine)?;
+            let mut cmd = manager
+                .install_requirements_command(&venv, &staged)
+                .to_command();
+            let install_result =
+                run_command_with_timeout_and_cancel(&mut cmd, 600, blocking_job.cancel.as_ref());
 
             let _ = fs::remove_file(&staged);
 
