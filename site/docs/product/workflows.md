@@ -16,7 +16,7 @@ Expected result:
 
 - Existing environments appear in the workspace inventory.
 - Missing paths are marked stale instead of silently ignored.
-- Native Conda/Pixi environments are shown as read-only inventory.
+- Conda environments are shown as read-only inventory. Pixi environments support native PyPI dependency writes where safe.
 
 ## Create a project environment
 

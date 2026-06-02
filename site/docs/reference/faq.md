@@ -14,7 +14,7 @@ Network is needed for package installation, PyPI search, metadata refresh, depen
 
 No. VOrchestra is local-first and does not require an account.
 
-## Why are Conda and Pixi read-only?
+## Why is Conda read-only, and how is Pixi handled?
 
 Conda and Pixi manage their own metadata and workflows. VOrchestra currently detects and inventories them but avoids mutation to prevent fighting the native manager. Future mutation support should be designed and tested explicitly.
 

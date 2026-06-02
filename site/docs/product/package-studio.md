@@ -29,7 +29,7 @@ For mutable pip and uv environments, VOrchestra supports:
 - Check install conflicts.
 - Ask why a package is installed.
 
-For Conda and Pixi environments, package mutation is read-only in VOrchestra. Use the native manager for changes.
+For Conda environments, package mutation remains read-only. For Pixi, VOrchestra uses native PyPI dependency writes where safe.
 
 ## Install sources
 

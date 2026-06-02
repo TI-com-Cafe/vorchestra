@@ -23,7 +23,7 @@ Optional workflow tools:
 - Git for pre-commit setup and repository-aware project operations.
 - VS Code CLI for editor integration and interpreter doctor workflows.
 - Jupyter plus `ipykernel` for notebook kernel registration.
-- Conda or Pixi when you want VOrchestra to inventory those native-manager environments read-only.
+- Conda when you want read-only native-manager inventory, or Pixi when you want inventory plus native PyPI dependency writes where safe.
 
 ## Tool-to-feature map
 
@@ -82,7 +82,7 @@ Jupyter and ipykernel:
 Conda and Pixi:
 
 - Show native-manager environments in inventory.
-- Keep mutation read-only in VOrchestra until explicit native workflows are implemented and tested.
+- Keep unsafe native-manager mutation read-only until explicit workflows are implemented and tested.
 
 ## Recommended installs
 

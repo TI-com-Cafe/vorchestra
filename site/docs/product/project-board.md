@@ -67,4 +67,4 @@ Use Project Board to:
 
 ## Native managers
 
-Conda and Pixi projects are shown as read-only inventory. Use Project Board to inspect and guide, but use native manager commands for mutation.
+Conda projects are shown as read-only inventory. Pixi projects can be inventoried and support native PyPI dependency writes where safe.

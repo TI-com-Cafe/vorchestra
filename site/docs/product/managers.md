@@ -60,7 +60,7 @@ conda env export
 
 ## Pixi
 
-Pixi environments are detected as read-only inventory.
+Pixi environments are detected as native-manager environments. VOrchestra supports native PyPI dependency writes through Pixi where safe.
 
 Use Pixi for mutation:
 
@@ -72,7 +72,7 @@ pixi run command
 
 ## Why read-only managers exist
 
-Mutating manager-native metadata incorrectly can break projects. VOrchestra keeps Conda and Pixi read-only until mutation workflows are intentionally designed and tested.
+Mutating manager-native metadata incorrectly can break projects. VOrchestra keeps Conda read-only and only performs Pixi mutations through native Pixi commands that are intentionally designed and tested.
 
 ## Future managers
 

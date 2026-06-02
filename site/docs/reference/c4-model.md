@@ -108,6 +108,6 @@ Do not let stale scan results recreate deleted venv entries. Prefer local cache 
 1. Add a manager implementation in `src-tauri/src/package_managers.rs`.
 2. Implement command builders for install, uninstall, update, freeze, check, outdated, requirements install, preview install, and preview upgrade.
 3. Add command construction tests using a fake venv path.
-4. Decide whether mutations are safe. If not, keep the manager read-only like Conda/Pixi.
+4. Decide whether mutations are safe. If not, keep the manager read-only like Conda.
 5. Update diagnostics, package tree, repair actions, and install hints only after command builders are tested.
 6. Add UI copy that explains what is editable and what remains native-manager-only.

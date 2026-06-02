@@ -1,193 +1,217 @@
 <p align="center">
-  <img src="./assets/vorchestra-icon.svg" alt="VOrchestra logo" width="128"/>
+  <img src="./assets/vorchestra-icon.svg" alt="VOrchestra logo" width="132" />
 </p>
 
-# VOrchestra
-
-<p align="center"><em>Local-first orchestration for Python virtual environments.</em></p>
+<h1 align="center">VOrchestra</h1>
 
 <p align="center">
-  <a href="./LICENSE"><img alt="License: Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-blue.svg"/></a>
-  <a href="https://github.com/TI-com-Cafe/vorchestra/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/TI-com-Cafe/vorchestra/actions/workflows/ci.yml/badge.svg"/></a>
-  <img alt="Version" src="https://img.shields.io/badge/version-0.1.0-66d9ef"/>
-  <img alt="Tauri" src="https://img.shields.io/badge/Tauri-2.x-f92672"/>
-  <img alt="Status" src="https://img.shields.io/badge/status-pre--release-faa61a"/>
+  <strong>Local-first orchestration for Python virtual environments.</strong>
 </p>
 
-VOrchestra is a native desktop app for discovering, creating, inspecting, repairing, auditing, and operating Python virtual environments across local workspaces.
+<p align="center">
+  Discover, inspect, repair, audit, clean up, and operate Python environments from one native desktop app.
+</p>
 
-It is built for developers who manage many `.venv` folders and need one place to understand environment health, dependency drift, security posture, disk usage, project configuration, and daily automation.
+<p align="center">
+  <a href="https://github.com/TI-com-Cafe/vorchestra/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/TI-com-Cafe/vorchestra/actions/workflows/ci.yml/badge.svg" /></a>
+  <a href="https://github.com/TI-com-Cafe/vorchestra/releases/tag/v0.1.0"><img alt="Release" src="https://img.shields.io/badge/release-v0.1.0-66d9ef" /></a>
+  <a href="./LICENSE"><img alt="License: Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-blue.svg" /></a>
+  <img alt="Tauri" src="https://img.shields.io/badge/Tauri-2.x-f92672" />
+  <img alt="Local first" src="https://img.shields.io/badge/local--first-no_telemetry-a6e22e" />
+</p>
 
-> Current release: [`v0.1.0`](https://github.com/TI-com-Cafe/vorchestra/releases/tag/v0.1.0) pre-release. Native installers are available for Linux, Windows, and macOS.
+<p align="center">
+  <a href="https://ti-com-cafe.github.io/vorchestra/">Documentation</a>
+  · <a href="https://github.com/TI-com-Cafe/vorchestra/releases/tag/v0.1.0">Download</a>
+  · <a href="./ROADMAP.md">Roadmap</a>
+  · <a href="./CONTRIBUTING.md">Contributing</a>
+  · <a href="./CHANGELOG.md">Changelog</a>
+</p>
 
-## Product Positioning
+---
 
-VOrchestra does not try to replace `uv`, `pip`, VS Code, Conda, Pixi, Docker, or Jupyter.
+## What It Is
 
-It sits above them as a local control center:
+VOrchestra is a native desktop control center for Python environments across local workspaces.
 
-- Inventory: find environments across workspaces.
-- Diagnostics: understand health, drift, outdated packages, and security posture.
-- Repair: guide safe fixes for broken, stale, or incomplete environments.
-- Cleanup: reclaim cache and environment disk space intentionally.
-- Operations: run package, lockfile, Docker, VS Code, Jupyter, pre-commit, and script workflows from one app.
+It is designed for developers who accumulate many `.venv` folders and need to answer practical questions quickly:
 
-## Download
+- Which environments exist on this machine?
+- Which ones are broken, stale, huge, vulnerable, or drifting from lockfiles?
+- What package changed, what depends on it, and how risky is the next install?
+- How do I repair or rebuild this environment without freezing the UI?
+- How do I keep project tooling, Docker, VS Code, Jupyter, scripts, security checks, and `.env` files aligned?
 
-Download the latest pre-release from:
+VOrchestra does not replace `pip`, `uv`, Pixi, Conda, VS Code, Docker, or Jupyter. It orchestrates them locally and gives you a single operational view.
+
+## Current Release
+
+`v0.1.0` is the first public pre-release.
+
+Download installers from:
 
 https://github.com/TI-com-Cafe/vorchestra/releases/tag/v0.1.0
 
-Available packages:
+Expected release assets:
 
-- Linux: `.AppImage`, `.deb`, `.rpm`
-- Windows: `.exe`, `.msi`
-- macOS: `.dmg` for Apple Silicon and Intel
+- Linux: `.AppImage`, `.deb`, and possibly `.rpm` depending on the Tauri build output.
+- Windows: `.msi` / `.exe` installer artifacts.
+- macOS: `.dmg` builds for Apple Silicon and Intel.
 
-## Screenshots
+The release workflow builds binaries for Linux, Windows, and macOS. Release artifacts may appear after GitHub Actions finishes the `Release` workflow.
 
-Screenshots are available in the documentation site and local screenshot capture notes live in [`assets/screenshots/README.md`](./assets/screenshots/README.md).
+## Documentation
 
-## Core Features
+The official documentation site is published at:
+
+https://ti-com-cafe.github.io/vorchestra/
+
+Useful local docs:
+
+- [Architecture](./docs/ARCHITECTURE.md)
+- [Command model](./docs/COMMANDS.md)
+- [Background jobs](./docs/JOBS.md)
+- [Developer notes](./docs/CONTRIBUTING_DEV.md)
+- [Good first issues](./docs/GOOD_FIRST_ISSUES.md)
+- [Language policy](./docs/LANGUAGE.md)
+- [Release process](./RELEASE.md)
+- [Roadmap](./ROADMAP.md)
+- [Changelog](./CHANGELOG.md)
+
+## Highlights
 
 ### Workspace Inventory
 
-- Add one or more workspaces.
-- Scan recursively for Python environments.
-- Keep a local SQLite cache for fast startup.
-- Mark a default workspace.
-- Adopt untracked environments found on disk.
-- Remove stale database entries when a folder no longer exists.
-- Serialize SQLite writes and retry transient `database is locked` failures.
+- Add multiple workspaces.
+- Recursively scan for `.venv`, virtualenv, Conda, and Pixi environments.
+- Cache inventory in local SQLite.
+- Detect untracked environments and stale database entries.
+- Remove stale entries when paths no longer exist.
+- Keep expensive scans cancellable and off the UI thread.
 - Configure scan depth with `VORCHESTRA_SCAN_MAX_DEPTH`.
 
 ### Environment Creation
 
-- Create environments using `pip` or `uv`.
-- Create from built-in templates for common community workflows.
+- Create environments with `pip` or `uv`.
+- Create from built-in templates based on real Python workflows.
 - Create custom templates from existing environments.
 - Create from project manifests such as `requirements.txt`, `pyproject.toml`, `Pipfile`, `setup.py`, and `setup.cfg`.
-- Use cancellable background jobs for template builds and package installs.
-- Use local writable `UV_CACHE_DIR` for `uv` operations to avoid global cache permission failures.
+- Keep template builds and package installs as background jobs.
+- Use local writable `UV_CACHE_DIR` for safer `uv` operations.
 
-### Project-First Mode
+### Project-First Operations
 
 - Group environments by project root.
-- Show project posture signals.
-- Show best environment health.
-- Detect manifests and installable inputs.
-- Run project-level `uv sync`, `uv lock`, `uv run`, `uv add`, and `uv remove` where supported.
-- Provide next-best actions such as scan, sync, repair, diagnostics, packages, or `uv sync`.
+- Detect project manifests and installable dependencies.
+- Show project posture and best environment health.
+- Run project-oriented `uv` workflows where supported.
+- Surface next-best actions: scan, sync, repair, diagnostics, packages, lockfile, or project sync.
 
 ### Package Studio
 
-- Package list with search, sort, and filters.
-- Package count and disk allocation cards.
-- Package install, uninstall, update, and export requirements.
-- PyPI search with version selection.
+- Search, sort, and filter installed packages.
 - Install from PyPI, Test PyPI, Git, URL, local file, or local project.
-- Compatibility check before package changes.
-- Dependency tree and graph views.
-- Package-size scans are separated from package cataloging so package lists can render first.
-- Tree and graph views include search/collapse controls to remain usable on large environments.
+- Preview install impact and compatibility before package changes.
+- Detect editable installs and package provenance where metadata is available.
+- Uninstall, update, export requirements, and inspect reverse dependencies.
+- View dependency tree and graph with performance controls for large environments.
+- Virtualized package and tree rendering for large package sets.
+
+### Manager Support
+
+- `pip`: package install, uninstall, update, freeze, diagnostics, lockfile restore, dependency tree helpers.
+- `uv`: package operations through `uv pip`, project sync/lock/run/add/remove workflows where supported.
+- Pixi: environment inventory plus native PyPI dependency writes through `pixi add/remove --pypi`.
+- Conda: read-only inventory and native-manager guidance.
+
+VOrchestra avoids mutating manager metadata where doing so would be unsafe or ambiguous.
 
 ### Health And Repair
 
 - Environment Health Score.
-- Repair Wizard with recommended next actions.
-- Install missing `pip` when supported.
-- Install helper tools such as `pipdeptree` and `pip-audit` when missing.
-- Remove stale inventory entries without deleting files.
-- Rebuild a broken environment from project sources.
-- Rebuild Source Preview before destructive changes.
-- Recoverable workspace-local trash for rebuild/delete flows.
-- Export support bundles for bug reports.
+- Repair Wizard with recommended actions.
+- Install missing `pip` where safe.
+- Install helper tools such as `pipdeptree` and `pip-audit` where supported.
+- Rebuild broken environments from project sources.
+- Preview rebuild source before destructive changes.
+- Create project snapshots under `.vorchestra/snapshots` before risky operations.
+- Restore project files and package freeze snapshots from the Repair tab.
+- Export sanitized support bundles for bug reports.
 
-### Diagnostics And Security
+### Diagnostics, Security, And Policy
 
 - Diagnostics do not auto-run when opening the tab.
 - Heavy checks run as cancellable background jobs.
-- Consistency checks through `pip` or `uv` depending on environment engine.
+- `pip check` / `uv pip check` consistency checks.
 - Outdated package checks.
-- Security scan through `pip-audit` and PyPA advisories.
-- Missing `pip-audit` UI with install and terminal-command options.
-- Package metadata audit:
-  - license summary;
-  - missing-license queue;
-  - deprecated/inactive package hints;
-  - suspicious package-name hints;
-  - searchable/filterable review queue.
+- `pip-audit` security scanning with install guidance when missing.
+- Package metadata audit for licenses, missing metadata, deprecated/inactive hints, and suspicious package names.
 - CycloneDX SBOM export.
+- Optional `vorchestra.toml` policy engine for package denylist, suspicious names, missing license handling, denied licenses, and critical vulnerability enforcement.
 
-### Native Manager Inventory
+### Disk Cleanup
 
-Conda and Pixi environments are detected as read-only inventory.
-
-VOrchestra can inspect and guide these environments, but it does not mutate native-manager metadata. Use Conda/Pixi for package mutation, then sync inventory in VOrchestra.
-
-### Cleanup
-
-- Cache summary.
-- Cache purge for allow-listed cache directories.
-- Duplicate wheel groups.
+- Cache summary by location.
+- Safe purge of allow-listed cache directories.
+- Duplicate wheel detection.
 - Large and stale environment candidates.
-- Missing database entries.
+- Missing environment entries.
 - Cleanup guidance before destructive action.
 
 ### Project Tools
 
-- Structured `.env` editor.
-- `.env.example` and `.env.template` awareness.
-- Secret-like value masking.
-- Raw `.env` edit mode.
-- Read-only `pyvenv.cfg` viewer.
+- Structured `.env` editor with `.env.example` / `.env.template` awareness.
+- Secret-like value masking and raw edit mode.
+- `pyvenv.cfg` viewer.
 - Saved automation scripts.
 - Quick tools such as pytest, ruff, black, and mypy.
 - Open activated terminal.
 - VS Code Interpreter Doctor.
 - Generate VS Code settings.
 - Register Jupyter kernels.
-- Generate Docker files.
-- Run Docker build/run in a terminal.
-- Install pre-commit hooks.
+- Generate Docker files and run Docker build/run in a terminal.
+- Install pre-commit hooks where supported.
 
-## What VOrchestra Does Not Do Yet
+### Local-First AI
 
-- No Homebrew, winget, Flathub, or Snap distribution yet.
-- No remote SSH workspace inventory yet.
-- No full package mutation support for Conda/Pixi.
+- Optional Ollama integration for local environment explanation.
+- Uses `http://127.0.0.1:11434` only.
+- No cloud calls and no telemetry.
+- If Ollama is unavailable, VOrchestra shows a local setup hint instead of failing the Studio.
+
+## Privacy Model
+
+VOrchestra is local-first by design.
+
 - No telemetry.
-- No account or cloud sync.
+- No analytics.
+- No account required.
+- No cloud sync.
+- Metadata is stored locally through SQLite.
+- Project files are written only when explicitly requested.
+- Network is used only for workflows that inherently require it, such as PyPI search, package installs, advisory lookups, or local Ollama calls to `localhost`.
 
 ## Requirements
 
-### Development Requirements
+### Runtime
 
-- Node.js 20+
-- npm
-- Rust 1.85+
-- Python 3.x
+- Linux, Windows, or macOS.
+- Python 3.x.
+- `pip` strongly recommended.
+- `uv` recommended for faster and more reproducible workflows.
 
-### Runtime Requirements
+Optional tools by feature:
 
-Baseline:
+- `pipdeptree`: dependency tree and graph for pip-style environments.
+- `pip-audit`: security scans.
+- Docker: Docker file generation and build/run workflow.
+- Git: pre-commit setup and project workflows.
+- VS Code CLI (`code`): editor integration.
+- Jupyter + `ipykernel`: kernel registration.
+- Pixi or Conda: native-manager inventory.
+- Ollama: local AI explanation.
 
-- Linux, Windows, or macOS desktop environment.
-- Python 3.x for environment creation, package inspection, diagnostics, and automation.
-- `pip` is strongly recommended because many environments and helper installs rely on it.
-
-Recommended tools by workflow:
-
-- `uv`: fast environment creation, uv-targeted package operations, `uv sync`, `uv lock`, `uv add`, `uv remove`, and `uv run`.
-- `pipdeptree`: dependency tree and graph support for `pip` environments.
-- `pip-audit`: security vulnerability scans.
-- Docker: generated Docker files and build/run terminal workflows.
-- Git: pre-commit setup and repository-aware project operations.
-- VS Code CLI (`code`): editor integration and interpreter doctor workflows.
-- Jupyter plus `ipykernel`: notebook kernel registration.
-- Conda or Pixi: read-only native-manager inventory.
-
-Install common Python helper tools:
+Common helper install:
 
 ```bash
 python -m pip install --upgrade pip
@@ -200,13 +224,13 @@ Install `uv` on Unix-like systems:
 curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
-Full runtime and platform guidance is available in the documentation:
+Full runtime guidance:
 
 https://ti-com-cafe.github.io/vorchestra/docs/start/requirements
 
-### Linux System Packages
+### Linux Build Packages
 
-Tauri/WebKit dependencies vary by distribution. On Debian/Ubuntu-like systems, you usually need packages similar to:
+On Debian/Ubuntu-like systems, Tauri/WebKit builds usually need:
 
 ```bash
 sudo apt-get install -y \
@@ -218,7 +242,7 @@ sudo apt-get install -y \
   libjavascriptcoregtk-4.1-dev
 ```
 
-Check the Tauri prerequisites for your distribution if the build fails.
+Check the official Tauri prerequisites for your distribution if native builds fail.
 
 ## Build From Source
 
@@ -229,7 +253,7 @@ npm install
 npm run tauri dev
 ```
 
-Frontend-only development server:
+Frontend-only development:
 
 ```bash
 npm run dev
@@ -248,91 +272,85 @@ Use targeted checks while developing:
 ```bash
 npm run check:frontend
 npm run test:frontend:product
+npm run test:frontend:components
+npm run test:frontend:hooks
+npm run test:frontend:smoke
 npm run check:rust
 npm run test:rust
 ```
 
-Run the full project check before pushing larger changes:
+Rust-specific checks:
+
+```bash
+cd src-tauri
+cargo fmt --all -- --check
+cargo clippy --all-targets -- -D warnings
+cargo test --all-targets
+```
+
+Full project check:
 
 ```bash
 npm run check
 ```
 
-Other useful commands:
+## GitHub Action
 
-```bash
-npm run test:frontend
-npm run test:frontend:components
-npm run test:frontend:hooks
-npm run test:frontend:smoke
-cd src-tauri && cargo fmt --all -- --check
-cd src-tauri && cargo clippy --all-targets -- -D warnings
+This repo includes a composite action for CI environment checks:
+
+```yaml
+- uses: TI-com-Cafe/vorchestra/.github/actions/vorchestra-health-check@v0.1.0
+  with:
+    mode: all
+    python: python
+    requirements-file: requirements.txt
 ```
+
+Modes:
+
+- `health`: runs `pip check`.
+- `security`: runs `pip check` and `pip-audit` when installed.
+- `metadata`: prints package/license metadata summary.
+- `all`: runs all checks.
 
 ## Configuration
 
-| Variable | Default | Purpose |
-|---|---:|---|
-| `VORCHESTRA_SCAN_MAX_DEPTH` | `16` | Maximum workspace scan depth. Values are clamped to `3..64`. |
+`VORCHESTRA_SCAN_MAX_DEPTH`
 
-## Data And Privacy
+Default: `16`.
 
-VOrchestra is local-first.
+Purpose: maximum workspace scan depth. Values are clamped to `3..64`.
 
-- No telemetry.
-- No analytics.
-- No account required.
-- Project files are written only when explicitly requested.
-- Workspace and environment metadata is stored locally through SQLite.
-- Network is used only for network-dependent workflows such as PyPI search, package install/update checks, and advisory lookups.
+### Project Policy
 
-## Architecture Overview
+Optional project policy file:
 
-```text
-src/
-  App.tsx                         # Main shell and overlay routing
-  components/                     # Product screens, Studio tabs, overlays, modals
-  constants/                      # Built-in templates and UI constants
-  hooks/app/                      # Domain hooks for app state and lifecycle
-  hooks/studio/                   # Studio-specific controllers
-  services/                       # SQLite/package/background job facades
-  types/                          # Shared TypeScript interfaces
-  utils/                          # Shared frontend utilities
+```toml
+# vorchestra.toml
+[policy]
+critical_vulnerabilities = "block"
+unknown_license = "warn"
+suspicious_packages = "warn"
+deprecated_packages = "warn"
 
-src-tauri/
-  src/lib.rs                      # Tauri setup, migrations, command registration
-  src/jobs.rs                     # Background job state/cancellation
-  src/commands/                   # Tauri command modules by domain
-  src/*                           # Parsers, package helpers, process utilities, reports
+[policy.licenses]
+deny = ["GPL", "AGPL"]
+
+[policy.packages]
+deny = ["bad-package"]
 ```
 
-Heavy work runs in Rust and is moved off the UI thread where needed. Long-running operations are exposed through background jobs and cancellation where supported.
+Policy is project-local. Missing config means no enforcement.
 
 ## Troubleshooting
 
 ### `database is locked`
 
-Close other running VOrchestra instances and retry. VOrchestra serializes frontend writes and retries transient locks, but another process can still hold the database.
+Close other running VOrchestra instances and retry. VOrchestra retries transient locks, but another process can still hold SQLite open.
 
 ### `No module named pip`
 
-Some `uv` environments do not include `pip`. VOrchestra uses `uv pip ... --python <venv_python>` where possible. Use Repair to install missing `pip` only for environments where that is safe.
-
-### Conda/Pixi looks read-only
-
-This is intentional. Use the native manager for mutation:
-
-```bash
-conda list
-conda env export
-conda update --all --dry-run
-```
-
-```bash
-pixi list
-pixi lock
-pixi install
-```
+Some environments are created without `pip`. VOrchestra uses manager-specific commands where possible. Use Repair to install missing `pip` only where safe.
 
 ### Dependency tree requires `pipdeptree`
 
@@ -358,7 +376,11 @@ For `uv`:
 uv pip install --python "<venv>/bin/python" pip-audit
 ```
 
-The Security Scan screen can install it directly or open a terminal with the correct command.
+For Pixi:
+
+```bash
+pixi add pip-audit
+```
 
 ### VS Code uses the wrong interpreter
 
@@ -368,24 +390,36 @@ Open Studio -> Repair or Project Tools and use VS Code Interpreter Doctor.
 
 Confirm Docker is installed and running. Save generated manifests before using Build & Run.
 
-## Documentation
+### Local AI is unavailable
 
-- [Published documentation site](https://ti-com-cafe.github.io/vorchestra/)
-- [Architecture](./docs/ARCHITECTURE.md)
-- [Command model](./docs/COMMANDS.md)
-- [Background jobs](./docs/JOBS.md)
-- [Developer contribution notes](./docs/CONTRIBUTING_DEV.md)
-- [Good first issue candidates](./docs/GOOD_FIRST_ISSUES.md)
-- [Language policy](./docs/LANGUAGE.md)
-- [Release process](./RELEASE.md)
-- [Roadmap](./ROADMAP.md)
-- [Changelog](./CHANGELOG.md)
+Start Ollama and install a model:
+
+```bash
+ollama pull llama3.2
+```
+
+VOrchestra will use local `localhost` Ollama only.
 
 ## Contributing
 
-Contributions are welcome after the first public repository reset.
+Contributions are welcome.
 
-Start with [`CONTRIBUTING.md`](./CONTRIBUTING.md), then check [`docs/GOOD_FIRST_ISSUES.md`](./docs/GOOD_FIRST_ISSUES.md) for scoped starter work.
+Start here:
+
+- [CONTRIBUTING.md](./CONTRIBUTING.md)
+- [Developer notes](./docs/CONTRIBUTING_DEV.md)
+- [Good first issue candidates](./docs/GOOD_FIRST_ISSUES.md)
+- [Architecture overview](./docs/ARCHITECTURE.md)
+- [C4 model](./docs/C4_MODEL.md)
+
+Recommended contribution areas:
+
+- Package-manager support and command fakes.
+- Backend parser tests and fixtures.
+- UX improvements around long-running jobs.
+- Policy engine rules.
+- Local-first diagnostics and repair flows.
+- Documentation and screenshots.
 
 ## Security
 
@@ -393,7 +427,7 @@ Please report vulnerabilities privately using GitHub Security Advisories. Do not
 
 ## License
 
-Apache-2.0. See [`LICENSE`](./LICENSE).
+Apache-2.0. See [LICENSE](./LICENSE).
 
 ---
 

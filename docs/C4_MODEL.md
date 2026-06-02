@@ -64,7 +64,7 @@ flowchart TB
 ### Package manager abstraction
 
 - `src-tauri/src/package_managers.rs` centralizes command shapes for `pip` and `uv`.
-- Conda and Pixi are currently read-only inventory targets.
+- Conda remains read-only inventory; Pixi supports native PyPI dependency writes where safe.
 - New managers should be added through this abstraction, not through scattered `engine == ...` branches.
 
 ### Command runner
@@ -149,7 +149,7 @@ Rules:
 1. Add a manager implementation in `src-tauri/src/package_managers.rs`.
 2. Implement common command builders: install, uninstall, update, freeze, check, outdated, requirements install, preview install, and preview upgrade.
 3. Add command construction tests using a fake venv path.
-4. Decide whether mutations are safe. If not, keep the manager read-only like Conda/Pixi.
+4. Decide whether mutations are safe. If not, keep the manager read-only like Conda.
 5. Update diagnostics, package tree, repair actions, and install hints only after the command builders are tested.
 6. Add UI copy that explains what is editable and what remains native-manager-only.
 

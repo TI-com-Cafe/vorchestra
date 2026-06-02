@@ -36,7 +36,7 @@ Backend:
 - Heavy work must not block the UI thread.
 - Use background jobs for long-running or cancellable work.
 - Do not pass user-controlled strings to a shell.
-- Preserve Conda/Pixi read-only behavior unless mutation is intentionally designed and tested.
+- Preserve Conda read-only behavior; Pixi mutation must stay native, explicit, and tested.
 
 ## Targeted validation
 
@@ -81,5 +81,5 @@ npm run tauri dev
 2. Implement command builders for install, uninstall, update, check, outdated, freeze, requirements install, install preview, and upgrade preview.
 3. Add command-construction tests with fake venv paths.
 4. Decide whether the manager can be safely mutated by VOrchestra.
-5. Keep unsafe or immature managers read-only, like Conda/Pixi.
+5. Keep unsafe or immature managers read-only, like Conda.
 6. Update diagnostics, repair hints, package tree behavior, and UI copy after backend command construction is tested.

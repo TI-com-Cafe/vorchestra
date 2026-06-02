@@ -3,13 +3,13 @@
   "private": true,
   "version": "0.1.0",
   "description": "VOrchestra - the local-first orchestrator for Python virtual environments",
-  "homepage": "https://vorchestra.dev",
+  "homepage": "https://ti-com-cafe.github.io/vorchestra/",
   "repository": {
     "type": "git",
-    "url": "https://github.com/marquesantero/vorchestra.git"
+    "url": "https://github.com/TI-com-Cafe/vorchestra.git"
   },
   "bugs": {
-    "url": "https://github.com/marquesantero/vorchestra/issues"
+    "url": "https://github.com/TI-com-Cafe/vorchestra/issues"
   },
   "license": "Apache-2.0",
   "author": "Marco Antero",

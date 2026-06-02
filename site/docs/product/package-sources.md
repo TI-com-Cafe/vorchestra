@@ -78,5 +78,5 @@ uv environments:
 
 Conda and Pixi environments:
 
-- Are currently read-only inventory targets.
+- Conda remains read-only inventory; Pixi supports native PyPI dependency writes where safe.
 - Mutate them with their native manager outside VOrchestra.

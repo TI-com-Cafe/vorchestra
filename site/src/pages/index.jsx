@@ -110,7 +110,7 @@ export default function Home() {
             <div className="pillRow">
               <span>Tauri desktop</span>
               <span>pip + uv</span>
-              <span>Conda/Pixi read-only</span>
+              <span>Conda read-only · Pixi native PyPI writes</span>
               <span>No telemetry</span>
             </div>
           </aside>
