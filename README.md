@@ -8,7 +8,7 @@
 
 <p align="center">
   <a href="./LICENSE"><img alt="License: Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-blue.svg"/></a>
-  <a href="https://github.com/marquesantero/vorchestra/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/marquesantero/vorchestra/actions/workflows/ci.yml/badge.svg"/></a>
+  <a href="https://github.com/TI-com-Cafe/vorchestra/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/TI-com-Cafe/vorchestra/actions/workflows/ci.yml/badge.svg"/></a>
   <img alt="Version" src="https://img.shields.io/badge/version-0.1.0-66d9ef"/>
   <img alt="Tauri" src="https://img.shields.io/badge/Tauri-2.x-f92672"/>
   <img alt="Status" src="https://img.shields.io/badge/status-pre--release-faa61a"/>
@@ -198,7 +198,7 @@ Check the Tauri prerequisites for your distribution if the build fails.
 ## Build From Source
 
 ```bash
-git clone https://github.com/marquesantero/vorchestra.git
+git clone https://github.com/TI-com-Cafe/vorchestra.git
 cd vorchestra
 npm install
 npm run tauri dev

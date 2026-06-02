@@ -1,6 +1,6 @@
 # Screenshots
 
-These screenshots show the current `0.1.0` pre-release interface. They are included to make the open source project easier to evaluate before binary releases are available.
+These screenshots show the current `0.1.0` pre-release interface. They are included to make the open source project easier to evaluate before downloading or building the app.
 
 <div class="screenshotGallery">
   <figure><img src="/vorchestra/img/screenshots/vorchestra-1.png" alt="Workspace inventory with discovered environments" /><figcaption>Workspace inventory with discovered environments, workspace controls, search and environment cards.</figcaption></figure>

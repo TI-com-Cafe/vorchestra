@@ -2,25 +2,24 @@
 
 ## 0.1.x - Stabilization
 
-Goal: make the source-built app reliable for early testers.
+Goal: make the pre-release app reliable for early testers.
 
 - Run final real-app smoke test with `npm run tauri dev`.
 - Validate create environment, template creation, workspace scan, package catalog, tree, graph, diagnostics, security, repair, cleanup, Docker and VS Code flows.
 - Fix blockers found during real-app smoke testing.
 - Triage Dependabot PRs conservatively.
-- Add screenshots/GIFs.
+- Keep screenshots and release notes current.
 - Convert good-first-issue candidates into GitHub issues.
 
-## 0.2 - First binary release
+## 0.2 - Distribution hardening
 
-Goal: install VOrchestra without Node/Rust.
+Goal: make installation and updates easier across platforms.
 
-- Validate `.github/workflows/release.yml` on a tag.
-- Publish GitHub Release artifacts.
-- Verify Linux `.AppImage` and `.deb`.
-- Verify macOS `.dmg`.
-- Verify Windows installer artifact.
+- Verify Linux `.AppImage`, `.deb`, and `.rpm`.
+- Verify macOS `.dmg` on Apple Silicon and Intel.
+- Verify Windows `.exe` and `.msi`.
 - Document platform-specific install dependencies.
+- Evaluate Homebrew, winget, Flathub, and Snap after the first public feedback cycle.
 
 ## 0.3 - Product hardening
 

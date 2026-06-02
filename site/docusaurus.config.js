@@ -5,7 +5,7 @@ const config = {
   title: 'VOrchestra',
   tagline: 'Local-first orchestration for Python virtual environments.',
   favicon: 'img/vorchestra-icon.svg',
-  url: 'https://marquesantero.github.io',
+  url: 'https://ti-com-cafe.github.io',
   baseUrl: '/vorchestra/',
   organizationName: 'marquesantero',
   projectName: 'vorchestra',
@@ -40,7 +40,7 @@ const config = {
       ({
         docs: {
           sidebarPath: './sidebars.js',
-          editUrl: 'https://github.com/marquesantero/vorchestra/edit/main/site/',
+          editUrl: 'https://github.com/TI-com-Cafe/vorchestra/edit/main/site/',
           routeBasePath: 'docs',
         },
         blog: false,
@@ -90,7 +90,7 @@ const config = {
           {to: '/docs/reference/troubleshooting', label: 'Troubleshooting', position: 'left'},
           {type: 'search', position: 'right'},
           {
-            href: 'https://github.com/marquesantero/vorchestra',
+            href: 'https://github.com/TI-com-Cafe/vorchestra',
             label: 'GitHub',
             position: 'right',
           },
@@ -111,9 +111,9 @@ const config = {
           {
             title: 'Project',
             items: [
-              {label: 'GitHub', href: 'https://github.com/marquesantero/vorchestra'},
-              {label: 'Issues', href: 'https://github.com/marquesantero/vorchestra/issues'},
-              {label: 'Releases', href: 'https://github.com/marquesantero/vorchestra/releases'},
+              {label: 'GitHub', href: 'https://github.com/TI-com-Cafe/vorchestra'},
+              {label: 'Issues', href: 'https://github.com/TI-com-Cafe/vorchestra/issues'},
+              {label: 'Releases', href: 'https://github.com/TI-com-Cafe/vorchestra/releases'},
               {label: 'Contributing', to: '/docs/community/contributing'},
             ],
           },

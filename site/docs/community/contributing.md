@@ -5,7 +5,7 @@ VOrchestra is pre-release. Focused changes with clear validation are more useful
 ## Setup
 
 ```bash
-git clone https://github.com/marquesantero/vorchestra.git
+git clone https://github.com/TI-com-Cafe/vorchestra.git
 cd vorchestra
 npm install
 npm run tauri dev

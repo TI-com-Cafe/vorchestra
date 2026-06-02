@@ -19,7 +19,7 @@ npm run dev
 npm run tauri build
 ```
 
-The release workflow is scaffolded, but binary releases have not been published yet.
+Published pre-release installers are available on GitHub Releases. Use source builds for local development, validation, and contribution work.
 
 ## Validation commands
 

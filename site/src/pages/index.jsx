@@ -81,8 +81,8 @@ export default function Home() {
             <p className="eyebrow">Current release · 0.1.0</p>
             <strong>One desktop surface for inventory, repair, cleanup and security.</strong>
             <p>
-              Build from source today. Binary releases, screenshots and packaged installers are the
-              next release milestone.
+              Pre-release installers are available for Linux, Windows and macOS. Build from source
+              remains available for contributors and local validation.
             </p>
             <div className="pillRow">
               <span>Tauri desktop</span>

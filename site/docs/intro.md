@@ -16,7 +16,11 @@ VOrchestra does not replace `uv`, `pip`, Conda, Pixi, VS Code, Docker, Jupyter, 
 
 ## Current status
 
-Version `0.1.0` is a pre-release source-built version. Binary installers are planned for the next release milestone.
+Version `0.1.0` is a published pre-release with native installers for Linux, Windows, and macOS.
+
+Download it from the GitHub release:
+
+https://github.com/TI-com-Cafe/vorchestra/releases/tag/v0.1.0
 
 ## Documentation map
 
