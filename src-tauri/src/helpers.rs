@@ -322,11 +322,24 @@ pub fn list_installed_packages(venv: &Path) -> Result<Vec<String>, String> {
 
     let python = get_python_path(venv);
     let script = r#"import importlib.metadata as m
+import json
 pkgs = []
 for d in m.distributions():
     name = d.metadata.get("Name") or d.metadata.get("name") or d.name
     if name:
-        pkgs.append(f"{name}=={d.version}")
+        suffix = ""
+        try:
+            direct_url_raw = d.read_text("direct_url.json")
+            if direct_url_raw:
+                direct_url = json.loads(direct_url_raw)
+                if direct_url.get("dir_info", {}).get("editable"):
+                    source = direct_url.get("url") or "local project"
+                    if source.startswith("file://"):
+                        source = source[7:]
+                    suffix = f" (editable: {source})"
+        except Exception:
+            pass
+        pkgs.append(f"{name}=={d.version}{suffix}")
 for line in sorted(set(pkgs), key=lambda s: s.lower()):
     print(line)
 "#;
