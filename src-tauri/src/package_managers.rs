@@ -57,6 +57,8 @@ pub trait PackageManager {
     fn freeze_command(&self, venv: &Path) -> PackageCommand;
     fn install_requirements_command(&self, venv: &Path, requirements_path: &Path)
         -> PackageCommand;
+    fn install_preview_command(&self, venv: &Path, package: &str) -> PackageCommand;
+    fn upgrade_preview_command(&self, venv: &Path, package: &str) -> PackageCommand;
     fn install_success_message(&self, package: &str) -> String;
     fn uninstall_success_message(&self, package: &str) -> String;
     fn update_success_message(&self, package: &str) -> String;
@@ -140,6 +142,33 @@ impl PackageManager for PipManager {
                 "install".into(),
                 "-r".into(),
                 path_string(requirements_path.to_path_buf()),
+            ],
+        )
+    }
+
+    fn install_preview_command(&self, venv: &Path, package: &str) -> PackageCommand {
+        PackageCommand::new(
+            path_string(get_python_path(venv)),
+            vec![
+                "-m".into(),
+                "pip".into(),
+                "install".into(),
+                "--dry-run".into(),
+                package.into(),
+            ],
+        )
+    }
+
+    fn upgrade_preview_command(&self, venv: &Path, package: &str) -> PackageCommand {
+        PackageCommand::new(
+            path_string(get_python_path(venv)),
+            vec![
+                "-m".into(),
+                "pip".into(),
+                "install".into(),
+                "--upgrade".into(),
+                "--dry-run".into(),
+                package.into(),
             ],
         )
     }
@@ -255,6 +284,35 @@ impl PackageManager for UvManager {
                 path_string(get_python_path(venv)),
                 "-r".into(),
                 path_string(requirements_path.to_path_buf()),
+            ],
+        )
+    }
+
+    fn install_preview_command(&self, venv: &Path, package: &str) -> PackageCommand {
+        uv_command(
+            venv,
+            vec![
+                "pip".into(),
+                "install".into(),
+                "--python".into(),
+                path_string(get_python_path(venv)),
+                "--dry-run".into(),
+                package.into(),
+            ],
+        )
+    }
+
+    fn upgrade_preview_command(&self, venv: &Path, package: &str) -> PackageCommand {
+        uv_command(
+            venv,
+            vec![
+                "pip".into(),
+                "install".into(),
+                "--upgrade".into(),
+                "--dry-run".into(),
+                "--python".into(),
+                path_string(get_python_path(venv)),
+                package.into(),
             ],
         )
     }
@@ -420,6 +478,44 @@ mod tests {
         assert_eq!(command.args[4], "-r");
         assert_eq!(command.args[5], req.to_string_lossy());
         assert!(command.env.iter().any(|(k, _)| k == "UV_CACHE_DIR"));
+        let _ = fs::remove_dir_all(venv);
+    }
+
+    #[test]
+    fn pip_preview_commands_use_dry_run() {
+        let venv = fake_venv();
+        let install = PipManager.install_preview_command(&venv, "httpx");
+        let upgrade = PipManager.upgrade_preview_command(&venv, "httpx");
+
+        assert!(install.program.ends_with(expected_python_suffix()));
+        assert_eq!(
+            install.args,
+            vec!["-m", "pip", "install", "--dry-run", "httpx"]
+        );
+        assert_eq!(
+            upgrade.args,
+            vec!["-m", "pip", "install", "--upgrade", "--dry-run", "httpx"]
+        );
+        let _ = fs::remove_dir_all(venv);
+    }
+
+    #[test]
+    fn uv_preview_commands_target_python() {
+        let venv = fake_venv();
+        let install = UvManager.install_preview_command(&venv, "httpx");
+        let upgrade = UvManager.upgrade_preview_command(&venv, "httpx");
+
+        assert_eq!(install.args[0], "pip");
+        assert_eq!(install.args[1], "install");
+        assert_eq!(install.args[2], "--python");
+        assert!(install.args[3].ends_with(expected_python_suffix()));
+        assert_eq!(install.args[4], "--dry-run");
+        assert_eq!(install.args[5], "httpx");
+        assert_eq!(upgrade.args[0], "pip");
+        assert_eq!(upgrade.args[1], "install");
+        assert!(upgrade.args.contains(&"--upgrade".to_string()));
+        assert!(upgrade.args.contains(&"--dry-run".to_string()));
+        assert!(upgrade.env.iter().any(|(k, _)| k == "UV_CACHE_DIR"));
         let _ = fs::remove_dir_all(venv);
     }
 

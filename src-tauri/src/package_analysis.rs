@@ -2,10 +2,11 @@
 //! reverse dependency lookup, and dry-run conflict checks.
 
 use crate::helpers::{
-    ensure_venv_dir, get_manager_path, get_python_path, new_command,
-    run_command_with_timeout_and_cancel, stdout_or_stderr, uv_cache_dir_for,
+    ensure_venv_dir, get_python_path, new_command, run_command_with_timeout_and_cancel,
+    stdout_or_stderr,
 };
 use crate::jobs::{set_job_progress, BackgroundJobHandle};
+use crate::package_managers::manager_for_engine;
 
 /// Runs a dry-run upgrade for a package and returns the raw resolver
 /// output. pip / uv emit a human-readable plan listing what would be
@@ -22,21 +23,10 @@ pub(crate) fn preview_upgrade_job(
         Some(0.2),
     );
     let venv = ensure_venv_dir(&venv_path)?;
-    let mut cmd = if engine == "uv" {
-        let uv = get_manager_path("uv");
-        let python = get_python_path(&venv);
-        let mut c = new_command(uv);
-        c.env("UV_CACHE_DIR", uv_cache_dir_for(&venv));
-        c.args(["pip", "install", "--upgrade", "--dry-run", "--python"])
-            .arg(&python)
-            .arg(&package);
-        c
-    } else {
-        let python = get_python_path(&venv);
-        let mut c = new_command(python);
-        c.args(["-m", "pip", "install", "--upgrade", "--dry-run", &package]);
-        c
-    };
+    let manager = manager_for_engine(&engine)?;
+    let mut cmd = manager
+        .upgrade_preview_command(&venv, &package)
+        .to_command();
     let out = run_command_with_timeout_and_cancel(&mut cmd, 120, job.cancel.as_ref())?;
     set_job_progress(job, "Upgrade preview finished.", Some(0.95));
     Ok(format!(
@@ -111,22 +101,8 @@ pub(crate) fn check_install_conflicts_job(
         Some(0.2),
     );
     let pb = ensure_venv_dir(&venv_path)?;
-
-    let mut cmd = if engine == "uv" {
-        let uv = get_manager_path("uv");
-        let python = get_python_path(&pb);
-        let mut c = new_command(uv);
-        c.env("UV_CACHE_DIR", uv_cache_dir_for(&pb));
-        c.args(["pip", "install", "--python"])
-            .arg(&python)
-            .args(["--dry-run", &package]);
-        c
-    } else {
-        let python = get_python_path(&pb);
-        let mut c = new_command(python);
-        c.args(["-m", "pip", "install", "--dry-run", &package]);
-        c
-    };
+    let manager = manager_for_engine(&engine)?;
+    let mut cmd = manager.install_preview_command(&pb, &package).to_command();
 
     let out = run_command_with_timeout_and_cancel(&mut cmd, 120, job.cancel.as_ref())?;
     set_job_progress(job, "Conflict check finished.", Some(0.95));
