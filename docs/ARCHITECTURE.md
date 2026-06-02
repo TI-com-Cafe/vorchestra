@@ -18,7 +18,10 @@ VOrchestra is a local-first Tauri 2 desktop app. The frontend owns UI state and 
 
 - `src-tauri/src/lib.rs` registers Tauri commands and database migrations.
 - `src-tauri/src/jobs.rs` tracks background job state, progress, logs, result, and cancellation.
-- `src-tauri/src/helpers.rs` contains shared command execution, Python/venv helpers, parsers, and safety utilities.
+- `src-tauri/src/helpers.rs` contains shared Python/venv helpers, parsers, and safety utilities.
+- `src-tauri/src/process_utils.rs` contains process execution helpers, including streaming stdout/stderr support.
+- `src-tauri/src/package_managers.rs` centralizes `pip` and `uv` command construction.
+- `src-tauri/src/command_runner.rs` provides a narrow test seam for package-analysis command execution.
 - `src-tauri/src/commands/` is split by feature area:
   - `venv.rs`: scan/create/clone/diff/details.
   - `packages.rs`: install/update/uninstall/tree/sizes/PyPI/package hygiene.
@@ -37,3 +40,7 @@ VOrchestra is a local-first Tauri 2 desktop app. The frontend owns UI state and 
 - UI should not auto-run expensive diagnostics on tab entry.
 - Commands that mutate environments should surface progress and cancellation when possible.
 - The app is local-first: no telemetry, no account, and network only for explicit package/search/audit operations.
+
+## C4 Reference
+
+See `docs/C4_MODEL.md` for context, container, component, background-job, SQLite/cache, and package-manager extension diagrams.

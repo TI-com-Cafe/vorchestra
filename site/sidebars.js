@@ -27,7 +27,7 @@ const sidebars = {
     {
       type: 'category',
       label: 'Reference',
-      items: ['reference/architecture', 'reference/commands', 'reference/background-jobs', 'reference/troubleshooting'],
+      items: ['reference/architecture', 'reference/c4-model', 'reference/commands', 'reference/background-jobs', 'reference/troubleshooting'],
     },
     {
       type: 'category',
