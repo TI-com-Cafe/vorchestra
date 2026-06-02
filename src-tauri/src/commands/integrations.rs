@@ -401,11 +401,7 @@ mod tests {
         } else {
             "/tmp/demo/.venv"
         });
-        let python = if cfg!(windows) {
-            r"C:\tmp\demo\.venv\Scripts\python.exe"
-        } else {
-            "/tmp/demo/.venv/bin/python"
-        };
+        let python = get_python_path(venv).to_string_lossy().to_string();
         let audit_cmd = format!("uv pip install --python \"{}\" pip-audit", python);
         let tree_cmd = format!("uv pip install --python \"{}\" pipdeptree", python);
         assert_eq!(
