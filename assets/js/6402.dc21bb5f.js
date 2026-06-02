@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkvorchestra_docs_site=self.webpackChunkvorchestra_docs_site||[]).push([[6402],{6402(e,s,c){c.d(s,{createArchitectureServices:()=>r.S});var r=c(5016);c(9302)}}]);
