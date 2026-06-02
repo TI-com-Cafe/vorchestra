@@ -194,10 +194,10 @@ fn install_uv_job(job: &crate::jobs::BackgroundJobHandle) -> Result<String, Stri
             return Ok("uv installed successfully.".to_string());
         }
         let stderr = stdout_or_stderr(&out);
-        return Err(classify_install_error(format!(
+        Err(classify_install_error(format!(
             "uv installer failed: {}",
             stderr.trim()
-        )));
+        )))
     }
 
     #[cfg(unix)]
@@ -270,6 +270,7 @@ pub async fn install_uv_elevated() -> Result<String, String> {
 
         #[cfg(unix)]
         {
+            #[cfg(target_os = "linux")]
             let temp_dir = std::env::temp_dir();
             #[cfg(target_os = "linux")]
             let safe_path = temp_dir.to_string_lossy().to_string();
@@ -462,6 +463,7 @@ pub async fn install_python_elevated(version: String) -> Result<String, String> 
 
         #[cfg(unix)]
         {
+            #[cfg(target_os = "linux")]
             let temp_dir = std::env::temp_dir();
             #[cfg(target_os = "linux")]
             let safe_path = temp_dir.to_string_lossy().to_string();
