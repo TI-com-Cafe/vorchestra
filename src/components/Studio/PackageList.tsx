@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { ArrowUpCircle, FileQuestion, Info, Search, SlidersHorizontal, Trash2 } from "lucide-react";
 
 interface PackageListProps {
@@ -17,6 +17,8 @@ type PackageSort = "name" | "size_desc" | "size_asc";
 type PackageFilter = "all" | "large" | "known_size" | "unknown_size";
 
 const LARGE_PACKAGE_MB = 25;
+const INITIAL_RENDER_LIMIT = 180;
+const RENDER_INCREMENT = 180;
 
 export const PackageList: React.FC<PackageListProps> = ({
   packages,
@@ -32,6 +34,7 @@ export const PackageList: React.FC<PackageListProps> = ({
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<PackageSort>("name");
   const [filter, setFilter] = useState<PackageFilter>("all");
+  const [renderLimit, setRenderLimit] = useState(INITIAL_RENDER_LIMIT);
 
   const visiblePackages = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
@@ -58,6 +61,15 @@ export const PackageList: React.FC<PackageListProps> = ({
         return a.name.localeCompare(b.name);
       });
   }, [filter, packageSizes, packages, query, sort]);
+
+  useEffect(() => {
+    setRenderLimit(INITIAL_RENDER_LIMIT);
+  }, [filter, packages, query, sort]);
+
+  const renderedPackages = useMemo(
+    () => visiblePackages.slice(0, renderLimit),
+    [renderLimit, visiblePackages]
+  );
 
   const packageSummary = useMemo(() => {
     const knownSizes = visiblePackages
@@ -120,6 +132,9 @@ export const PackageList: React.FC<PackageListProps> = ({
         </label>
         <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 md:min-w-40 md:text-right leading-relaxed">
           <div>{visiblePackages.length}/{packages.length} shown</div>
+          {visiblePackages.length > renderedPackages.length && (
+            <div>{renderedPackages.length} rendered</div>
+          )}
           <div>
             {packageSummary.visibleSizeMb.toFixed(1)} MB visible
             {packageSummary.unknownCount > 0 ? `, ${packageSummary.unknownCount} unknown` : ""}
@@ -156,8 +171,9 @@ export const PackageList: React.FC<PackageListProps> = ({
           <p className="text-xs font-black uppercase tracking-widest text-slate-400">No packages match this filter</p>
         </div>
       ) : (
+        <>
         <div className="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-2.5">
-          {visiblePackages.map((pkg) => {
+          {renderedPackages.map((pkg) => {
             const { name, version, size } = pkg;
 
             return (
@@ -187,6 +203,16 @@ export const PackageList: React.FC<PackageListProps> = ({
             );
           })}
         </div>
+        {visiblePackages.length > renderedPackages.length && (
+          <button
+            onClick={() => setRenderLimit(prev => prev + RENDER_INCREMENT)}
+            className="vo-secondary-action w-full rounded-2xl px-4 py-3 text-[10px] font-black uppercase tracking-widest"
+          >
+            Render {Math.min(RENDER_INCREMENT, visiblePackages.length - renderedPackages.length)} more package{Math.min(RENDER_INCREMENT, visiblePackages.length - renderedPackages.length) === 1 ? "" : "s"}
+            {" "}({visiblePackages.length - renderedPackages.length} remaining)
+          </button>
+        )}
+        </>
       )}
     </div>
   );

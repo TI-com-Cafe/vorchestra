@@ -95,6 +95,30 @@ describe("Studio package UI smoke tests", () => {
     expect(screen.queryByText("fastapi")).not.toBeInTheDocument();
   });
 
+  it("progressively renders very large package lists", async () => {
+    const packages = Array.from({ length: 220 }, (_, index) => `pkg-${String(index + 1).padStart(3, "0")}==1.0.0`);
+    render(
+      <PackageList
+        packages={packages}
+        packageSizes={{}}
+        packageActionActive={false}
+        insightActionActive={false}
+        onPreviewUpgrade={vi.fn()}
+        onWhyInstalled={vi.fn()}
+        onUpdate={vi.fn()}
+        onUninstall={vi.fn()}
+      />
+    );
+
+    expect(screen.getByText("220/220 shown")).toBeInTheDocument();
+    expect(screen.getByText("180 rendered")).toBeInTheDocument();
+    expect(screen.getByText("pkg-001")).toBeInTheDocument();
+    expect(screen.queryByText("pkg-220")).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: /render 40 more packages/i }));
+    expect(screen.getByText("pkg-220")).toBeInTheDocument();
+  });
+
   it("filters dependency graph data while preserving matched ancestry", () => {
     const graph = [
       {
