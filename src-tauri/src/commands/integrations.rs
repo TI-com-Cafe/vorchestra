@@ -396,7 +396,18 @@ mod tests {
 
     #[test]
     fn validate_terminal_venv_command_allows_known_install_helpers() {
-        let venv = std::path::Path::new("/tmp/demo/.venv");
+        let venv = std::path::Path::new(if cfg!(windows) {
+            r"C:\tmp\demo\.venv"
+        } else {
+            "/tmp/demo/.venv"
+        });
+        let python = if cfg!(windows) {
+            r"C:\tmp\demo\.venv\Scripts\python.exe"
+        } else {
+            "/tmp/demo/.venv/bin/python"
+        };
+        let audit_cmd = format!("uv pip install --python \"{}\" pip-audit", python);
+        let tree_cmd = format!("uv pip install --python \"{}\" pipdeptree", python);
         assert_eq!(
             validate_terminal_venv_command(venv, "  pip install pipdeptree  ").unwrap(),
             "pip install pipdeptree"
@@ -406,20 +417,12 @@ mod tests {
             "pip install pip-audit"
         );
         assert_eq!(
-            validate_terminal_venv_command(
-                venv,
-                "uv pip install --python \"/tmp/demo/.venv/bin/python\" pip-audit"
-            )
-            .unwrap(),
-            "uv pip install --python \"/tmp/demo/.venv/bin/python\" pip-audit"
+            validate_terminal_venv_command(venv, &audit_cmd).unwrap(),
+            audit_cmd
         );
         assert_eq!(
-            validate_terminal_venv_command(
-                venv,
-                "uv pip install --python \"/tmp/demo/.venv/bin/python\" pipdeptree"
-            )
-            .unwrap(),
-            "uv pip install --python \"/tmp/demo/.venv/bin/python\" pipdeptree"
+            validate_terminal_venv_command(venv, &tree_cmd).unwrap(),
+            tree_cmd
         );
     }
 

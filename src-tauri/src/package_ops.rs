@@ -243,9 +243,21 @@ mod tests {
             .unwrap()
             .as_nanos();
         let root = std::env::temp_dir().join(format!("vorchestra-package-ops-{}", suffix));
-        fs::create_dir_all(root.join("bin")).unwrap();
+        if cfg!(windows) {
+            fs::create_dir_all(root.join("Scripts")).unwrap();
+        } else {
+            fs::create_dir_all(root.join("bin")).unwrap();
+        }
         fs::write(root.join("pyvenv.cfg"), "home = /usr/bin\n").unwrap();
         root
+    }
+
+    fn expected_python_suffix() -> &'static str {
+        if cfg!(windows) {
+            "Scripts\\python.exe"
+        } else {
+            "bin/python"
+        }
     }
 
     #[test]
@@ -260,7 +272,7 @@ mod tests {
         let (program, args) =
             install_program_and_args(venv.to_str().unwrap(), "../project", "pip", &opts).unwrap();
 
-        assert!(program.ends_with("bin/python"));
+        assert!(program.ends_with(expected_python_suffix()));
         assert_eq!(
             args,
             vec![
@@ -289,7 +301,7 @@ mod tests {
         assert_eq!(args[0], "pip");
         assert_eq!(args[1], "install");
         assert_eq!(args[2], "--python");
-        assert!(args[3].ends_with("bin/python"));
+        assert!(args[3].ends_with(expected_python_suffix()));
         assert_eq!(args[4], "django");
         let _ = fs::remove_dir_all(venv);
     }
