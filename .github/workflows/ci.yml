@@ -94,4 +94,4 @@ jobs:
       - name: cargo audit
         working-directory: src-tauri
         run: cargo audit --deny warnings
-        continue-on-error: true # advisory-only for now; tighten in v0.3
+        continue-on-error: true # advisory-only for now; tighten after the first stable release line

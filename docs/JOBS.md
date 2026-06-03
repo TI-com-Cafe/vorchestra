@@ -18,6 +18,6 @@ VOrchestra uses backend jobs for long-running work so the desktop UI remains res
 - `success`: job finished with a result.
 - `error`: job failed with an error message.
 
-## Next Improvement
+## Future Improvement
 
 Replace polling with Tauri `emit`/`listen` events. Keep `get_background_job` as a compatibility fallback so slow or missed events can recover state.

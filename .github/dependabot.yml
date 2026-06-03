@@ -1,12 +1,13 @@
 version: 2
-# Strategy until v0.3:
+# Dependency update strategy:
 #   - Disable routine version updates (`open-pull-requests-limit: 0`).
 #     Cargo deps are intentionally pinned (=2.0.0, =4.4.0, =0.3.36, etc.)
-#     for Rust 1.85 compat; npm deps will be swept manually before v0.3.
+#     for Rust 1.85 compatibility; npm deps are reviewed manually before
+#     release-line upgrades.
 #   - Keep entries so Dependabot still ingests the manifests for *security*
 #     advisories (those PRs come from `automated-security-fixes`, which is
 #     enabled at the repository level and is independent of this limit).
-#   - Github Actions stays on a monthly cadence with grouping; low noise.
+#   - GitHub Actions stays on a monthly cadence with grouping; low noise.
 updates:
   - package-ecosystem: npm
     directory: "/"
