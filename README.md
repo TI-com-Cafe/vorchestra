@@ -46,19 +46,19 @@ VOrchestra does not replace `pip`, `uv`, Pixi, Conda, VS Code, Docker, or Jupyte
 
 ## Current Release
 
-`v0.1.0` is the first public pre-release.
+`v0.1.0` is the first public release.
 
 Download installers from:
 
 https://github.com/TI-com-Cafe/vorchestra/releases/tag/v0.1.0
 
-Expected release assets:
+Release assets:
 
-- Linux: `.AppImage`, `.deb`, and possibly `.rpm` depending on the Tauri build output.
-- Windows: `.msi` / `.exe` installer artifacts.
+- Linux: `.AppImage`, `.deb`, and `.rpm`.
+- Windows: `.msi` and `.exe` installer artifacts.
 - macOS: `.dmg` builds for Apple Silicon and Intel.
 
-The release workflow builds binaries for Linux, Windows, and macOS. Release artifacts may appear after GitHub Actions finishes the `Release` workflow.
+The release workflow builds binaries for Linux, Windows, and macOS.
 
 ## Documentation
 
