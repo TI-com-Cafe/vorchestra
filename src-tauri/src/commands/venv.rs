@@ -17,27 +17,15 @@ use crate::project_manifest::{
     read_setup_py,
 };
 use crate::recycle::recycle_dir;
-use crate::types::{ManifestKind, ProjectManifest, VenvDiffReport, VenvInfo, VenvSetupResult};
+use crate::types::{ManifestKind, ProjectManifest, VenvDiffReport, VenvSetupResult};
 use crate::venv_diff::build_venv_diff_report;
 use crate::venv_freeze::{freeze_venv, freeze_venv_with_cancel};
-use crate::venv_inspection::{
-    get_venv_details_job, get_venv_packages_job, get_venv_size_job, list_venvs_job,
-};
+use crate::venv_inspection::{get_venv_packages_job, get_venv_size_job, list_venvs_job};
 use serde::Serialize;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::UNIX_EPOCH;
-
-#[tauri::command]
-pub async fn scan_venv(path: String) -> Result<VenvInfo, String> {
-    tauri::async_runtime::spawn_blocking(move || {
-        let canon = ensure_venv_dir(&path)?;
-        get_venv_info(&canon).ok_or_else(|| "Not a valid venv".to_string())
-    })
-    .await
-    .map_err(|e| e.to_string())?
-}
 
 #[tauri::command]
 pub fn start_scan_venv_job(
@@ -212,49 +200,6 @@ pub fn create_venv_internal(
     } else {
         Err(String::from_utf8_lossy(&output.stderr).to_string())
     }
-}
-
-#[tauri::command]
-pub async fn create_venv(
-    path: String,
-    name: String,
-    python_bin: String,
-    engine: String,
-) -> Result<String, String> {
-    tauri::async_runtime::spawn_blocking(move || {
-        create_venv_internal(path, name.clone(), python_bin, engine)?;
-        Ok(format!("Created {}", name))
-    })
-    .await
-    .map_err(|e| e.to_string())?
-}
-
-#[tauri::command]
-pub async fn create_venv_with_template(
-    path: String,
-    name: String,
-    python_bin: String,
-    engine: String,
-    packages: Vec<String>,
-) -> Result<VenvSetupResult, String> {
-    tauri::async_runtime::spawn_blocking(move || {
-        let venv_path = create_venv_internal(path, name, python_bin, engine.clone())?;
-        let mut installed = Vec::new();
-        for pkg in packages {
-            crate::commands::packages::install_dependency_internal(
-                venv_path.clone(),
-                pkg.clone(),
-                engine.clone(),
-            )?;
-            installed.push(pkg);
-        }
-        Ok(VenvSetupResult {
-            venv_path,
-            installed,
-        })
-    })
-    .await
-    .map_err(|e| e.to_string())?
 }
 
 #[tauri::command]
@@ -1017,31 +962,6 @@ pub fn start_diff_venvs_job(
         let outcome = tauri::async_runtime::spawn_blocking(move || {
             diff_venvs_job(source_path, target_path, &blocking_job)
                 .and_then(|report| serde_json::to_value(report).map_err(|e| e.to_string()))
-        })
-        .await
-        .map_err(|e| e.to_string())
-        .and_then(|res| res);
-
-        match outcome {
-            Ok(result) => set_job_status(&job, "success", Some(result), None),
-            Err(err) if err == "Cancelled by user" => set_job_status(&job, "cancelled", None, None),
-            Err(err) => set_job_status(&job, "error", None, Some(err)),
-        }
-    });
-    Ok(job_id)
-}
-
-#[tauri::command]
-pub fn start_get_venv_details_job(
-    path: String,
-    state: tauri::State<'_, AppState>,
-) -> Result<String, String> {
-    let (job_id, job) = create_background_job(&state)?;
-    tauri::async_runtime::spawn(async move {
-        let blocking_job = job.clone();
-        let outcome = tauri::async_runtime::spawn_blocking(move || {
-            get_venv_details_job(path, &blocking_job)
-                .and_then(|details| serde_json::to_value(details).map_err(|e| e.to_string()))
         })
         .await
         .map_err(|e| e.to_string())

@@ -5,7 +5,7 @@ use crate::helpers::{
     scan_max_depth,
 };
 use crate::jobs::{set_job_progress, BackgroundJobHandle};
-use crate::types::{VenvDetails, VenvInfo};
+use crate::types::VenvInfo;
 use std::sync::atomic::{AtomicBool, Ordering};
 use walkdir::WalkDir;
 
@@ -60,21 +60,6 @@ pub(crate) fn list_venvs_job(
     }
     set_job_progress(job, "Workspace scan finished.", Some(0.95));
     Ok(venvs)
-}
-
-pub(crate) fn get_venv_details_job(
-    path: String,
-    job: &BackgroundJobHandle,
-) -> Result<VenvDetails, String> {
-    set_job_progress(job, "Inspecting environment folder...", Some(0.15));
-    let p = ensure_venv_dir(&path)?;
-    set_job_progress(job, "Calculating environment size...", Some(0.35));
-    let size_mb = safe_dir_size_mb(&p, 300_000);
-    ensure_not_cancelled(&job.cancel)?;
-    set_job_progress(job, "Reading installed packages...", Some(0.65));
-    let packages = list_installed_packages(&p)?;
-    set_job_progress(job, "Environment details loaded.", Some(0.95));
-    Ok(VenvDetails { packages, size_mb })
 }
 
 pub(crate) fn get_venv_packages_job(

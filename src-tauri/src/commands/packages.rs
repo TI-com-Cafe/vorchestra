@@ -353,11 +353,6 @@ pub fn start_export_requirements_job(
 }
 
 #[tauri::command]
-pub async fn search_pypi(query: String) -> Result<serde_json::Value, String> {
-    search_pypi_package(query).await
-}
-
-#[tauri::command]
 pub fn start_search_pypi_job(
     query: String,
     state: tauri::State<'_, AppState>,

@@ -49,7 +49,7 @@ On app start (`App.tsx`):
 
 ### 1. Workspaces & Discovery
 - Add/remove/default workspace.
-- Recursive venv scan via `list_venvs`.
+- Recursive venv scan via `start_list_venvs_job`.
 - Per-workspace local cache for fast reload.
 
 ### 2. Environment Creation
@@ -59,7 +59,7 @@ On app start (`App.tsx`):
 
 ### 3. Environment Cards
 Per-environment actions:
-- Single-env sync (`scan_venv`)
+- Single-env sync (`start_scan_venv_job`)
 - Open in VS Code
 - Open terminal
 - Open Studio
@@ -108,17 +108,17 @@ Actions:
 
 ## Tauri Commands
 
-Discovery / lifecycle: `list_venvs`, `scan_venv`, `create_venv`, `create_venv_with_template`, `delete_venv`, `get_venv_mtime`, `get_venv_details`.
+Discovery / lifecycle: `start_list_venvs_job`, `start_scan_venv_job`, `start_create_venv_with_template_job`, `delete_venv`, `get_venv_mtime`, `start_get_venv_packages_job`, `start_get_venv_size_job`.
 
-Packages: `install_dependency`, `uninstall_package`, `update_package`, `get_dependency_tree`, `check_dependency_tree_prereq`, `get_package_sizes`, `export_requirements`.
+Packages: `start_install_dependency_job`, `install_dependency_elevated`, `start_uninstall_package_job`, `start_update_package_job`, `start_get_dependency_tree_job`, `check_dependency_tree_prereq`, `start_get_package_sizes_job`, `start_export_requirements_job`, `start_search_pypi_job`, `start_check_install_conflicts_job`.
 
-Diagnostics: `check_venv_health`, `list_outdated_packages`, `audit_security`, `start_diagnostics_job`, `start_security_audit_job`, `get_background_job`, `cancel_background_job`.
+Diagnostics: `start_diagnostics_job`, `start_security_audit_job`, `start_package_metadata_audit_job`, `export_package_sbom`, `get_background_job`, `cancel_background_job`.
 
 Config / files: `read_env_file`, `save_env_file`, `get_pyvenv_cfg`, `save_project_file`.
 
 System integration: `open_terminal`, `open_terminal_with_venv_command`, `open_in_vscode`.
 
-Support: `list_system_pythons`, `check_managers`, `audit_environments`, `generate_docker_files`, `search_pypi`, `check_install_conflicts`, `purge_pip_cache`.
+Support: `list_system_pythons`, `check_managers`, `start_audit_environments_job`, `generate_docker_files`, `start_get_cache_summary_job`, `start_purge_cache_job`.
 
 ## External Dependencies
 

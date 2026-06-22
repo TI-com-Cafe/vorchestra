@@ -1,17 +1,16 @@
-//! System & global commands: hygiene audit (DB ↔ disk), pip cache purge,
+//! System & global commands: hygiene audit (DB ↔ disk), cache cleanup,
 //! and ad-hoc tool/script runners inside virtual environments.
 
 use crate::helpers::{
-    canonicalize_dir, default_python_command, ensure_venv_dir, exe_name, get_manager_path,
-    get_python_path, get_venv_info, new_command, run_command_with_timeout_cancel_and_output,
-    scan_max_depth,
+    canonicalize_dir, ensure_venv_dir, exe_name, get_manager_path, get_python_path, get_venv_info,
+    new_command, run_command_with_timeout_cancel_and_output, scan_max_depth,
 };
 use crate::jobs::{
     append_job_log, create_background_job, set_job_progress, set_job_status, AppState,
 };
 use crate::types::{AuditReport, ToolRunResult, VenvInfo};
 use std::collections::HashSet;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::sync::atomic::Ordering;
 use walkdir::WalkDir;
 
@@ -100,30 +99,6 @@ pub fn start_audit_environments_job(
         }
     });
     Ok(job_id)
-}
-
-#[tauri::command]
-pub async fn purge_pip_cache(venv_path: Option<String>) -> Result<String, String> {
-    tauri::async_runtime::spawn_blocking(move || {
-        let python: PathBuf = match venv_path.as_deref() {
-            Some(p) if !p.is_empty() => {
-                let venv = ensure_venv_dir(p)?;
-                get_python_path(&venv)
-            }
-            _ => PathBuf::from(default_python_command()),
-        };
-        let out = new_command(python)
-            .args(["-m", "pip", "cache", "purge"])
-            .output()
-            .map_err(|e| e.to_string())?;
-        if out.status.success() {
-            Ok("Pip cache cleared".into())
-        } else {
-            Err(String::from_utf8_lossy(&out.stderr).to_string())
-        }
-    })
-    .await
-    .map_err(|e| e.to_string())?
 }
 
 /// Generic "run a tool installed inside the venv" command. The tool is

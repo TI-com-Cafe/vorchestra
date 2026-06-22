@@ -24,12 +24,6 @@ pub struct VenvInfo {
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct VenvDetails {
-    pub packages: Vec<String>,
-    pub size_mb: f64,
-}
-
-#[derive(Serialize, Deserialize)]
 pub struct OutdatedPackage {
     pub name: String,
     pub version: String,
