@@ -59,6 +59,7 @@ pub fn open_terminal_with_venv_command(path: String, command: String) -> Result<
     let venv = ensure_venv_dir(&path)?;
     let terminal_command = validate_terminal_venv_command(&venv, &command)?;
     let safe_path = venv.to_string_lossy().to_string();
+    let cwd = venv.parent().unwrap_or(&venv).to_string_lossy().to_string();
 
     #[cfg(target_os = "linux")]
     {
@@ -66,32 +67,61 @@ pub fn open_terminal_with_venv_command(path: String, command: String) -> Result<
         // `command` into the script string. The command is still shell-evaluated
         // (that is the purpose of this function), but cannot break out of the
         // wrapper or be smuggled into other terminal arguments.
-        let script = r#"cd "$0" && source "$0/bin/activate" && eval "$1"; exec bash"#;
+        //
+        // Use a Bash rcfile for the final interactive shell. `source activate;
+        // exec bash` preserves PATH but loses shell-local activation state such
+        // as the prompt, which made the Activate action look non-functional.
+        let script = r#"export VORCHESTRA_VENV="$1" VORCHESTRA_CWD="$2" VORCHESTRA_COMMAND="$3"; exec bash --rcfile <(printf '%s\n' 'source "$VORCHESTRA_VENV/bin/activate"' 'cd "$VORCHESTRA_CWD"' 'eval "$VORCHESTRA_COMMAND"' 'unset VORCHESTRA_COMMAND') -i"#;
 
         let try_spawn = |bin: &str, prefix_args: &[&str]| -> bool {
             let mut cmd = new_command(bin);
             cmd.args(prefix_args);
-            cmd.args(["bash", "-lc", script, &safe_path, &terminal_command]);
+            cmd.args([
+                "bash",
+                "-lc",
+                script,
+                "vorchestra",
+                &safe_path,
+                &cwd,
+                &terminal_command,
+            ]);
             cmd.spawn().is_ok()
         };
 
-        if try_spawn("gnome-terminal", &["--working-directory", &safe_path, "--"]) {
+        if try_spawn("gnome-terminal", &["--working-directory", &cwd, "--"]) {
             return Ok(());
         }
-        if try_spawn("konsole", &["--workdir", &safe_path, "-e"]) {
+        if try_spawn("konsole", &["--workdir", &cwd, "-e"]) {
             return Ok(());
         }
         if new_command("xfce4-terminal")
-            .args(["--working-directory", &safe_path, "--disable-server", "-e"])
-            .args(["bash", "-lc", script, &safe_path, &terminal_command])
+            .args(["--working-directory", &cwd, "--disable-server", "-e"])
+            .args([
+                "bash",
+                "-lc",
+                script,
+                "vorchestra",
+                &safe_path,
+                &cwd,
+                &terminal_command,
+            ])
             .spawn()
             .is_ok()
         {
             return Ok(());
         }
         if new_command("xterm")
-            .args(["-e", "bash", "-lc", script, &safe_path, &terminal_command])
-            .current_dir(&safe_path)
+            .args([
+                "-e",
+                "bash",
+                "-lc",
+                script,
+                "vorchestra",
+                &safe_path,
+                &cwd,
+                &terminal_command,
+            ])
+            .current_dir(&cwd)
             .spawn()
             .is_ok()
         {
@@ -105,7 +135,10 @@ pub fn open_terminal_with_venv_command(path: String, command: String) -> Result<
         let activate = format!("{}\\Scripts\\activate.bat", safe_path);
         new_command("cmd")
             .args(["/c", "start", "", "cmd.exe", "/k"])
-            .arg(format!("\"{}\" && {}", activate, terminal_command))
+            .arg(format!(
+                "call \"{}\" && cd /d \"{}\" && {}",
+                activate, cwd, terminal_command
+            ))
             .spawn()
             .map_err(|e| e.to_string())?;
         return Ok(());
@@ -115,9 +148,11 @@ pub fn open_terminal_with_venv_command(path: String, command: String) -> Result<
     {
         let sq_escape = |s: &str| -> String { format!("'{}'", s.replace('\'', "'\\''")) };
         let quoted_path = sq_escape(&safe_path);
+        let quoted_cwd = sq_escape(&cwd);
         let bash_oneliner = format!(
-            "cd {p} && source {p}/bin/activate && {c}",
+            "source {p}/bin/activate && cd {cwd} && {c}",
             p = quoted_path,
+            cwd = quoted_cwd,
             c = terminal_command,
         );
         let escape_for_applescript =
@@ -161,33 +196,34 @@ fn validate_terminal_venv_command(venv: &Path, command: &str) -> Result<String, 
 pub fn open_terminal_activated(path: String) -> Result<(), String> {
     let venv = ensure_venv_dir(&path)?;
     let safe_path = venv.to_string_lossy().to_string();
+    let cwd = venv.parent().unwrap_or(&venv).to_string_lossy().to_string();
 
     #[cfg(target_os = "linux")]
     {
-        let script = r#"cd "$0" && source "$0/bin/activate"; exec bash"#;
+        let script = r#"export VORCHESTRA_VENV="$1" VORCHESTRA_CWD="$2"; exec bash --rcfile <(printf '%s\n' 'source "$VORCHESTRA_VENV/bin/activate"' 'cd "$VORCHESTRA_CWD"') -i"#;
         let try_spawn = |bin: &str, prefix_args: &[&str]| -> bool {
             let mut cmd = new_command(bin);
             cmd.args(prefix_args);
-            cmd.args(["bash", "-lc", script, &safe_path]);
+            cmd.args(["bash", "-lc", script, "vorchestra", &safe_path, &cwd]);
             cmd.spawn().is_ok()
         };
-        if try_spawn("gnome-terminal", &["--working-directory", &safe_path, "--"]) {
+        if try_spawn("gnome-terminal", &["--working-directory", &cwd, "--"]) {
             return Ok(());
         }
-        if try_spawn("konsole", &["--workdir", &safe_path, "-e"]) {
+        if try_spawn("konsole", &["--workdir", &cwd, "-e"]) {
             return Ok(());
         }
         if new_command("xfce4-terminal")
-            .args(["--working-directory", &safe_path, "--disable-server", "-e"])
-            .args(["bash", "-lc", script, &safe_path])
+            .args(["--working-directory", &cwd, "--disable-server", "-e"])
+            .args(["bash", "-lc", script, "vorchestra", &safe_path, &cwd])
             .spawn()
             .is_ok()
         {
             return Ok(());
         }
         if new_command("xterm")
-            .args(["-e", "bash", "-lc", script, &safe_path])
-            .current_dir(&safe_path)
+            .args(["-e", "bash", "-lc", script, "vorchestra", &safe_path, &cwd])
+            .current_dir(&cwd)
             .spawn()
             .is_ok()
         {
@@ -201,7 +237,7 @@ pub fn open_terminal_activated(path: String) -> Result<(), String> {
         let activate = format!("{}\\Scripts\\activate.bat", safe_path);
         new_command("cmd")
             .args(["/c", "start", "", "cmd.exe", "/k"])
-            .arg(format!("\"{}\"", activate))
+            .arg(format!("call \"{}\" && cd /d \"{}\"", activate, cwd))
             .spawn()
             .map_err(|e| e.to_string())?;
         return Ok(());
@@ -211,8 +247,9 @@ pub fn open_terminal_activated(path: String) -> Result<(), String> {
     {
         let sq_escape = |s: &str| -> String { format!("'{}'", s.replace('\'', "'\\''")) };
         let bash_oneliner = format!(
-            "cd {p} && source {p}/bin/activate",
+            "source {p}/bin/activate && cd {cwd}",
             p = sq_escape(&safe_path),
+            cwd = sq_escape(&cwd),
         );
         let escape_for_applescript =
             |s: &str| -> String { s.replace('\\', "\\\\").replace('"', "\\\"") };

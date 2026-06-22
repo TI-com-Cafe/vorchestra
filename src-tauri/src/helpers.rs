@@ -412,25 +412,43 @@ pub fn shell_quote(s: &str) -> String {
 #[cfg(not(windows))]
 pub fn open_terminal_with_command_internal(venv: &Path, command: &str) -> Result<(), String> {
     let safe_path = venv.to_string_lossy().to_string();
+    let cwd = venv.parent().unwrap_or(venv).to_string_lossy().to_string();
 
     #[cfg(target_os = "linux")]
     {
-        let script = r#"cd "$0" && source "$0/bin/activate" && eval "$1"; exec bash"#;
+        let script = r#"export VORCHESTRA_VENV="$1" VORCHESTRA_CWD="$2" VORCHESTRA_COMMAND="$3"; exec bash --rcfile <(printf '%s\n' 'source "$VORCHESTRA_VENV/bin/activate"' 'cd "$VORCHESTRA_CWD"' 'eval "$VORCHESTRA_COMMAND"' 'unset VORCHESTRA_COMMAND') -i"#;
         let try_spawn = |bin: &str, prefix_args: &[&str]| -> bool {
             let mut cmd = new_command(bin);
             cmd.args(prefix_args);
-            cmd.args(["bash", "-lc", script, &safe_path, command]);
+            cmd.args([
+                "bash",
+                "-lc",
+                script,
+                "vorchestra",
+                &safe_path,
+                &cwd,
+                command,
+            ]);
             cmd.spawn().is_ok()
         };
-        if try_spawn("gnome-terminal", &["--working-directory", &safe_path, "--"]) {
+        if try_spawn("gnome-terminal", &["--working-directory", &cwd, "--"]) {
             return Ok(());
         }
-        if try_spawn("konsole", &["--workdir", &safe_path, "-e"]) {
+        if try_spawn("konsole", &["--workdir", &cwd, "-e"]) {
             return Ok(());
         }
         if new_command("xterm")
-            .args(["-e", "bash", "-lc", script, &safe_path, command])
-            .current_dir(&safe_path)
+            .args([
+                "-e",
+                "bash",
+                "-lc",
+                script,
+                "vorchestra",
+                &safe_path,
+                &cwd,
+                command,
+            ])
+            .current_dir(&cwd)
             .spawn()
             .is_ok()
         {
@@ -442,8 +460,9 @@ pub fn open_terminal_with_command_internal(venv: &Path, command: &str) -> Result
     #[cfg(target_os = "macos")]
     {
         let bash_oneliner = format!(
-            "cd {p} && source {p}/bin/activate && {c}",
+            "source {p}/bin/activate && cd {cwd} && {c}",
             p = shell_quote(&safe_path),
+            cwd = shell_quote(&cwd),
             c = command,
         );
         let escape = |s: &str| s.replace('\\', "\\\\").replace('"', "\\\"");
