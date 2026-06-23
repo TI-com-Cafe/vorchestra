@@ -60,6 +60,72 @@ Release assets:
 
 The release workflow builds binaries for Linux, Windows, and macOS.
 
+## Install And Uninstall
+
+### Windows
+
+Install with `VOrchestra_*_x64_en-US.msi` or `VOrchestra_*_x64-setup.exe`.
+
+Uninstall:
+
+- Open Windows Settings.
+- Go to Apps, then Installed apps.
+- Search for `VOrchestra`.
+- Select Uninstall.
+
+The MSI and setup EXE are native Windows installers, so VOrchestra should also appear in classic Control Panel uninstall flows.
+
+### macOS
+
+Install with the `.dmg` for your CPU architecture, then drag `VOrchestra.app` into Applications.
+
+Uninstall:
+
+- Quit VOrchestra.
+- Delete `VOrchestra.app` from Applications.
+- Optional data cleanup: remove `~/Library/Application Support/dev.vorchestra.app`.
+
+### Linux
+
+Install with the package format that matches your distro.
+
+AppImage:
+
+```bash
+chmod +x VOrchestra*.AppImage
+./VOrchestra*.AppImage
+```
+
+Uninstall AppImage:
+
+```bash
+rm ./VOrchestra*.AppImage
+```
+
+If you integrated the AppImage with a launcher tool, remove the generated desktop entry from your launcher tool as well.
+
+Debian / Ubuntu:
+
+```bash
+sudo apt install ./VOrchestra*.deb
+sudo apt remove vorchestra
+```
+
+Fedora / RHEL / openSUSE-style RPM:
+
+```bash
+sudo dnf install ./VOrchestra*.rpm
+sudo dnf remove VOrchestra
+```
+
+Optional Linux data cleanup:
+
+```bash
+rm -rf ~/.local/share/dev.vorchestra.app
+```
+
+Uninstalling VOrchestra does not delete your workspaces or Python environments. Those are regular project folders on your machine.
+
 ## Documentation
 
 The official documentation site is published at:

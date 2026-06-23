@@ -72,9 +72,15 @@ jobs:
             See the [CHANGELOG](./CHANGELOG.md) for details.
 
             ## Installation
-            - **Linux:** `.AppImage` (universal) or `.deb` (Debian/Ubuntu)
+            - **Linux:** `.AppImage` (universal), `.deb` (Debian/Ubuntu), or `.rpm` (Fedora/RHEL/openSUSE)
             - **macOS:** `.dmg` (Apple Silicon and Intel builds available)
-            - **Windows:** `.msi`
+            - **Windows:** `.msi` or setup `.exe`
+
+            ## Uninstall
+            - **Windows:** Settings → Apps → Installed apps → VOrchestra → Uninstall
+            - **macOS:** quit VOrchestra, then delete `VOrchestra.app` from Applications
+            - **Linux AppImage:** delete the downloaded `.AppImage`
+            - **Linux deb/rpm:** remove through your package manager (`apt remove vorchestra`, `dnf remove VOrchestra`, or equivalent)
           releaseDraft: true
           prerelease: true
           args: ${{ matrix.args }}
