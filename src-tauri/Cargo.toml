@@ -1,6 +1,6 @@
 [package]
 name = "vorchestra"
-version = "0.1.0"
+version = "0.1.1"
 description = "VOrchestra - the local-first orchestrator for Python virtual environments"
 authors = ["Marco"]
 edition = "2021"

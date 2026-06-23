@@ -14,7 +14,7 @@
 
 <p align="center">
   <a href="https://github.com/TI-com-Cafe/vorchestra/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/TI-com-Cafe/vorchestra/actions/workflows/ci.yml/badge.svg" /></a>
-  <a href="https://github.com/TI-com-Cafe/vorchestra/releases/tag/v0.1.0"><img alt="Release" src="https://img.shields.io/badge/release-v0.1.0-66d9ef" /></a>
+  <a href="https://github.com/TI-com-Cafe/vorchestra/releases/tag/v0.1.1"><img alt="Release" src="https://img.shields.io/badge/release-v0.1.1-66d9ef" /></a>
   <a href="./LICENSE"><img alt="License: Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-blue.svg" /></a>
   <img alt="Tauri" src="https://img.shields.io/badge/Tauri-2.x-f92672" />
   <img alt="Local first" src="https://img.shields.io/badge/local--first-no_telemetry-a6e22e" />
@@ -22,7 +22,7 @@
 
 <p align="center">
   <a href="https://ti-com-cafe.github.io/vorchestra/">Documentation</a>
-  · <a href="https://github.com/TI-com-Cafe/vorchestra/releases/tag/v0.1.0">Download</a>
+  · <a href="https://github.com/TI-com-Cafe/vorchestra/releases/tag/v0.1.1">Download</a>
   · <a href="./ROADMAP.md">Roadmap</a>
   · <a href="./CONTRIBUTING.md">Contributing</a>
   · <a href="./CHANGELOG.md">Changelog</a>
@@ -46,11 +46,11 @@ VOrchestra does not replace `pip`, `uv`, Pixi, Conda, VS Code, Docker, or Jupyte
 
 ## Current Release
 
-`v0.1.0` is the first public release.
+`v0.1.1` is the current public release. `v0.1.0` was the first public release.
 
 Download installers from:
 
-https://github.com/TI-com-Cafe/vorchestra/releases/tag/v0.1.0
+https://github.com/TI-com-Cafe/vorchestra/releases/tag/v0.1.1
 
 Release assets:
 
@@ -299,7 +299,7 @@ npm run check
 This repo includes a composite action for CI environment checks:
 
 ```yaml
-- uses: TI-com-Cafe/vorchestra/.github/actions/vorchestra-health-check@v0.1.0
+- uses: TI-com-Cafe/vorchestra/.github/actions/vorchestra-health-check@v0.1.1
   with:
     mode: all
     python: python

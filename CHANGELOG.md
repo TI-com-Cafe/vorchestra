@@ -14,6 +14,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Add more parser and package-manager fixtures for edge cases.
 - Expand offline behavior for cached package metadata.
 
+## [0.1.1] - 2026-06-23
+
+### Fixed
+
+- Fixed the activated terminal flow so Linux, macOS, and Windows sessions keep the selected virtual environment active in the final interactive shell.
+- Open activated terminals at the project root when available instead of inside the `.venv` folder.
+
+### Changed
+
+- Removed orphaned legacy Tauri commands that had already been replaced by background-job commands.
+- Kept the command registry aligned with the frontend invoke surface: every registered command is now reachable by the app.
+- Updated command documentation to use the current job-based API names.
+
 ## [0.1.0] - 2026-06-01
 
 ### Added
