@@ -59,6 +59,16 @@ pub struct ManagerStatus {
     pub pixi: bool,
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct AppUpdateInfo {
+    pub current_version: String,
+    pub latest_version: String,
+    pub update_available: bool,
+    pub release_url: String,
+    pub release_name: String,
+    pub published_at: Option<String>,
+}
+
 /// Per-package result of a venv vs lockfile comparison.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]

@@ -1,6 +1,7 @@
 import { useCallback, useState, useEffect, type SetStateAction } from "react";
+import { invoke } from "@tauri-apps/api/core";
 
-import { VenvInfo, VenvDetails, Script, ThemeMode, StatusFilter, StudioTabId, Template } from "./types";
+import { AppUpdateInfo, VenvInfo, VenvDetails, Script, ThemeMode, StatusFilter, StudioTabId, Template } from "./types";
 import { PYTHON_TEMPLATES } from "./constants/templates";
 import {
   useAppActions,
@@ -63,6 +64,7 @@ export default function App() {
   const [compareSource, setCompareSource] = useState<VenvInfo | null>(null);
   const [isSaveTemplateOpen, setIsSaveTemplateOpen] = useState(false);
   const [savingTemplate, setSavingTemplate] = useState(false);
+  const [updateInfo, setUpdateInfo] = useState<AppUpdateInfo | null>(null);
 
   const { statusText, toasts, pushMessage: setMessage, mountedRef } = useToastMessages();
   const setWizardDismissedPersisted = useCallback((value: SetStateAction<boolean>) => {
@@ -79,6 +81,34 @@ export default function App() {
 
   useGlobalSearchShortcut(setIsSearchOpen);
   useThemeAndZoom(theme, zoomLevel);
+  useEffect(() => {
+    let cancelled = false;
+    const checkForUpdates = async () => {
+      try {
+        const info = await invoke<AppUpdateInfo>("check_app_update");
+        if (cancelled || !info.update_available) return;
+        const dismissedVersion = localStorage.getItem("vorchestra:update-dismissed-version");
+        if (dismissedVersion !== info.latest_version) {
+          setUpdateInfo(info);
+        }
+      } catch (err) {
+        console.info("Update check skipped:", err);
+      }
+    };
+
+    void checkForUpdates();
+    return () => { cancelled = true; };
+  }, []);
+  const dismissUpdateAlert = useCallback(() => {
+    if (updateInfo?.latest_version) {
+      try {
+        localStorage.setItem("vorchestra:update-dismissed-version", updateInfo.latest_version);
+      } catch {
+        // localStorage can be unavailable in restricted webviews.
+      }
+    }
+    setUpdateInfo(null);
+  }, [updateInfo?.latest_version]);
   useAppInitialization({
     setWorkspaces,
     setActiveWorkspace,
@@ -262,6 +292,8 @@ export default function App() {
       setSavingTemplate={setSavingTemplate}
       statusText={statusText}
       toasts={toasts}
+      updateInfo={updateInfo}
+      onDismissUpdate={dismissUpdateAlert}
       filteredVenvs={filteredVenvs}
       stats={stats}
       setMessage={setMessage}

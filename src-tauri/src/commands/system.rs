@@ -8,11 +8,77 @@ use crate::helpers::{
 use crate::jobs::{
     append_job_log, create_background_job, set_job_progress, set_job_status, AppState,
 };
-use crate::types::{AuditReport, ToolRunResult, VenvInfo};
+use crate::types::{AppUpdateInfo, AuditReport, ToolRunResult, VenvInfo};
+use serde::Deserialize;
 use std::collections::HashSet;
 use std::path::Path;
 use std::sync::atomic::Ordering;
+use std::time::Duration;
 use walkdir::WalkDir;
+
+const LATEST_RELEASE_URL: &str =
+    "https://api.github.com/repos/TI-com-Cafe/vorchestra/releases/latest";
+
+#[derive(Deserialize)]
+struct GithubRelease {
+    tag_name: String,
+    html_url: String,
+    name: Option<String>,
+    published_at: Option<String>,
+}
+
+fn parse_version_parts(raw: &str) -> Vec<u64> {
+    raw.trim()
+        .trim_start_matches('v')
+        .split(['.', '-', '+'])
+        .take_while(|part| part.chars().all(|c| c.is_ascii_digit()))
+        .map(|part| part.parse::<u64>().unwrap_or(0))
+        .collect()
+}
+
+fn is_newer_version(latest: &str, current: &str) -> bool {
+    let mut latest_parts = parse_version_parts(latest);
+    let mut current_parts = parse_version_parts(current);
+    let width = latest_parts.len().max(current_parts.len()).max(3);
+    latest_parts.resize(width, 0);
+    current_parts.resize(width, 0);
+    latest_parts > current_parts
+}
+
+#[tauri::command]
+pub async fn check_app_update() -> Result<AppUpdateInfo, String> {
+    let current_version = env!("CARGO_PKG_VERSION").to_string();
+    let client = reqwest::Client::builder()
+        .timeout(Duration::from_secs(8))
+        .user_agent(format!("VOrchestra/{}", current_version))
+        .build()
+        .map_err(|e| e.to_string())?;
+
+    let response = client
+        .get(LATEST_RELEASE_URL)
+        .send()
+        .await
+        .map_err(|e| format!("Failed to check latest release: {}", e))?;
+
+    if !response.status().is_success() {
+        return Err(format!(
+            "GitHub release check returned HTTP {}",
+            response.status()
+        ));
+    }
+
+    let release: GithubRelease = response.json().await.map_err(|e| e.to_string())?;
+    let latest_version = release.tag_name.trim_start_matches('v').to_string();
+
+    Ok(AppUpdateInfo {
+        update_available: is_newer_version(&latest_version, &current_version),
+        current_version,
+        latest_version,
+        release_url: release.html_url,
+        release_name: release.name.unwrap_or(release.tag_name),
+        published_at: release.published_at,
+    })
+}
 
 fn audit_environments_job(
     workspace_paths: Vec<String>,
@@ -376,7 +442,19 @@ pub fn start_run_venv_script_job(
 
 #[cfg(test)]
 mod tests {
-    use super::validate_uv_sync_args;
+    use super::{is_newer_version, validate_uv_sync_args};
+
+    #[test]
+    fn app_update_version_compare_detects_newer_patch() {
+        assert!(is_newer_version("0.1.2", "0.1.1"));
+        assert!(is_newer_version("v1.0.0", "0.9.9"));
+    }
+
+    #[test]
+    fn app_update_version_compare_ignores_same_version_and_v_prefix() {
+        assert!(!is_newer_version("v0.1.1", "0.1.1"));
+        assert!(!is_newer_version("0.1.0", "0.1.1"));
+    }
 
     #[test]
     fn validate_uv_sync_args_allows_structured_scope_flags() {

@@ -106,6 +106,7 @@ pub fn run() {
             runtime_installers::uv_install_command,
             commands::system::start_audit_environments_job,
             runtime_installers::start_list_python_versions_job,
+            commands::system::check_app_update,
             commands::system::start_run_venv_script_job,
             commands::system::start_run_in_venv_job,
             commands::system::start_run_uv_project_job,

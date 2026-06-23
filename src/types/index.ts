@@ -36,6 +36,15 @@ export interface ManagerStatus {
   pixi: boolean;
 }
 
+export interface AppUpdateInfo {
+  current_version: string;
+  latest_version: string;
+  update_available: boolean;
+  release_url: string;
+  release_name: string;
+  published_at?: string | null;
+}
+
 export interface PythonVersion {
   version: string;
   key: string;

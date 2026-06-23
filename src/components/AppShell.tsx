@@ -1,7 +1,8 @@
 import { Dispatch, SetStateAction, useState } from "react";
-import { FolderPlus, RefreshCcw, SearchX } from "lucide-react";
+import { openUrl } from "@tauri-apps/plugin-opener";
+import { ExternalLink, FolderPlus, RefreshCcw, SearchX, X } from "lucide-react";
 
-import { VenvInfo, VenvDetails, Script, ThemeMode, StatusFilter, StudioTabId, Template, ToastMessage } from "../types";
+import { AppUpdateInfo, VenvInfo, VenvDetails, Script, ThemeMode, StatusFilter, StudioTabId, Template, ToastMessage } from "../types";
 import { STATUS_FILTERS } from "../constants/ui";
 import { cn } from "../utils/cn";
 import { Sidebar } from "./Sidebar";
@@ -82,6 +83,8 @@ interface AppShellProps {
   setSavingTemplate: Dispatch<SetStateAction<boolean>>;
   statusText: string;
   toasts: ToastMessage[];
+  updateInfo: AppUpdateInfo | null;
+  onDismissUpdate: () => void;
   filteredVenvs: VenvInfo[];
   stats: { total: number; healthy: number; broken: number };
   setMessage: (message: string) => void;
@@ -122,6 +125,15 @@ export const AppShell = (props: AppShellProps) => {
     return <InitialLoadingScreen />;
   }
   const attentionCount = props.filteredVenvs.filter(v => assessEnvironmentHealth(v).tone !== "green").length;
+  const updateInfo = props.updateInfo?.update_available ? props.updateInfo : null;
+  const openRelease = async () => {
+    if (!updateInfo?.release_url) return;
+    try {
+      await openUrl(updateInfo.release_url);
+    } catch (err) {
+      props.setMessage(`Error opening release: ${err}`);
+    }
+  };
 
   return (
     <div id="root-container" className="vo-app-bg flex h-screen text-slate-800 dark:text-slate-50 font-sans overflow-hidden transition-colors duration-200 origin-top-left">
@@ -167,6 +179,38 @@ export const AppShell = (props: AppShellProps) => {
             </div>
           </div>
         </header>
+
+        {updateInfo && (
+          <section className="mx-8 mt-4 vo-panel flex items-center justify-between gap-4 rounded-2xl border border-blue-300/60 bg-blue-50/80 px-4 py-3 shadow-sm dark:border-blue-500/30 dark:bg-blue-950/25">
+            <div className="min-w-0">
+              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-blue-600 dark:text-blue-300">
+                Update available
+              </p>
+              <p className="truncate text-sm font-black text-slate-900 dark:text-white">
+                VOrchestra {updateInfo.latest_version} is available. You are running {updateInfo.current_version}.
+              </p>
+              <p className="truncate text-[11px] font-bold text-slate-500 dark:text-slate-400">
+                {updateInfo.release_name}
+              </p>
+            </div>
+            <div className="flex shrink-0 items-center gap-2">
+              <button
+                onClick={() => void openRelease()}
+                className="vo-primary-action flex items-center gap-2 rounded-xl px-4 py-2 text-[10px] font-black uppercase tracking-widest"
+              >
+                <ExternalLink size={14} />
+                Download
+              </button>
+              <button
+                onClick={props.onDismissUpdate}
+                className="vo-control rounded-xl border p-2 text-slate-500 transition-colors hover:text-slate-900 dark:hover:text-white"
+                title="Dismiss update alert"
+              >
+                <X size={14} />
+              </button>
+            </div>
+          </section>
+        )}
 
         <NewEnvironmentBar
           newVenvName={props.newVenvName}
